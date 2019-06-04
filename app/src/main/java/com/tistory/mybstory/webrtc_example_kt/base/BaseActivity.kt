@@ -9,13 +9,13 @@ import kotlin.reflect.KClass
 
 open class BaseActivity : AppCompatActivity() {
 
-    inline fun <reified T : Any> Context.launchActivity(
-        options: Bundle? = null) {
-        startActivity(newIntent<T>(this).apply {
-            options?.let{putExtras(options)}
-        })
-    }
-
-    inline fun <reified T : Any> newIntent(context: Context): Intent =
-        Intent(context, T::class.java)
+//    inline fun <reified T : Any> Context.launchActivity(
+//        options: Bundle? = null) {
+//        startActivity(newIntent<T>(this).apply {
+//            options?.let{putExtras(options)}
+//        })
+//    }
+//
+//    inline fun <reified T : Any> newIntent(context: Context): Intent =
+//        Intent(context, T::class.java)
 }

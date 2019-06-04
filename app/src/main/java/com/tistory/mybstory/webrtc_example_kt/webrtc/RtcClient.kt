@@ -1,17 +1,17 @@
 package com.tistory.mybstory.webrtc_example_kt.webrtc
 
 import android.content.Context
-import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionListener
+import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
+import com.tistory.mybstory.webrtc_example_kt.base.RemoteVideoHandler
 import com.tistory.mybstory.webrtc_example_kt.util.RtcUtil
 import org.webrtc.*
 import org.webrtc.PeerConnection.IceServer
 
-class RtcClient private constructor(context: Context) {
+class RtcClient private constructor(context: Context) : RemoteVideoHandler {
 
     private val eglBase = EglBase.create()
     private var peerConnectionFactory: PeerConnectionFactory
     private var peerConnection: PeerConnection? = null
-    private var peerConnectionListener: PeerConnectionListener? = null
     private var surfaceTextureHelper: SurfaceTextureHelper
     private var videoCapturer: VideoCapturer?
 
@@ -19,6 +19,17 @@ class RtcClient private constructor(context: Context) {
     private var localVideoTrack: VideoTrack? = null
     private var localAudioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
+
+    private var remoteVideoTrack: VideoTrack? = null
+
+    private var localSurfaceViewRenderer: SurfaceViewRenderer? = null
+    private var remoteSurfaceViewRenderer: SurfaceViewRenderer? = null
+
+    private val mediaConstraints = MediaConstraints().apply {
+        mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
+        mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
+        mandatory.add(MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"))
+    }
 
     companion object {
         private var instance: RtcClient? = null
@@ -45,37 +56,33 @@ class RtcClient private constructor(context: Context) {
             .setVideoDecoderFactory(defaultVideoDecoderFactory)
             .createPeerConnectionFactory()
 
-        surfaceTextureHelper = SurfaceTextureHelper.create(Thread.currentThread().name, eglBase.eglBaseContext)
+        surfaceTextureHelper = SurfaceTextureHelper.create("CapturingThread", eglBase.eglBaseContext)
         videoCapturer = RtcUtil.createVideoCapturer(context)
 
         videoCapturer?.let {
             localVideoSource = peerConnectionFactory.createVideoSource(false)
-            localVideoTrack = peerConnectionFactory.createVideoTrack("VIDEO_01", localVideoSource)
-            it.initialize(surfaceTextureHelper, context, localVideoSource?.capturerObserver)
-            //enableVideo(true, it)
+            localVideoTrack = peerConnectionFactory.createVideoTrack("ARDAMSv0", localVideoSource)
+            it.initialize(surfaceTextureHelper, context, localVideoSource!!.capturerObserver)
+            enableVideo(true, it)
         }
 
         localAudioSource = peerConnectionFactory.createAudioSource(mediaConstraints)
-        localAudioTrack = peerConnectionFactory.createAudioTrack("AUDIO_01", localAudioSource)
+        localAudioTrack = peerConnectionFactory.createAudioTrack("ARDAMSa0", localAudioSource)
 
     }
 
-    private fun enableVideo(isEnabled: Boolean, videoCapturer: VideoCapturer) {
-        if (isEnabled) {
-            videoCapturer.startCapture(1920, 1080, 30)
-        } else {
-            videoCapturer.stopCapture()
-        }
-    }
-
-    fun initPeerConnection(iceServers: List<IceServer>,
-        peerConnectionListener: PeerConnectionListener,
-        peerConnectionObserver: PeerConnection.Observer) {
+    fun initPeerConnection(
+        iceServers: List<IceServer>,
+        peerConnectionHandler: PeerConnectionHandler
+    ) {
 
         val rtcConfiguration = PeerConnection.RTCConfiguration(iceServers)
+        rtcConfiguration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
+
+        val peerConnectionObserver = RtcPeerConnectionObserver(peerConnectionHandler, this)
         peerConnection = peerConnectionFactory.createPeerConnection(rtcConfiguration, peerConnectionObserver)
-        this.peerConnectionListener = peerConnectionListener
-        val localMediaStream = peerConnectionFactory.createLocalMediaStream("localMediaStream")
+
+        val localMediaStream = peerConnectionFactory.createLocalMediaStream("ARDAMS")
 
         localMediaStream.apply {
             localAudioTrack?.let {
@@ -87,4 +94,55 @@ class RtcClient private constructor(context: Context) {
         }
         peerConnection?.addStream(localMediaStream)
     }
+
+    // TODO : need to run on the other thread
+
+    fun createOffer(sdpObserver: SimpleSdpObserver) = peerConnection?.createOffer(sdpObserver, mediaConstraints)
+
+    fun createAnswer(sdpObserver: SimpleSdpObserver) = peerConnection?.createAnswer(sdpObserver, mediaConstraints)
+
+    fun setLocalDescription(sdpObserver: SimpleSdpObserver, localDescription: SessionDescription) =
+        peerConnection?.setLocalDescription(sdpObserver, localDescription)
+
+    fun setRemoteDescription(sdpObserver: SimpleSdpObserver, remoteDescription: SessionDescription) =
+        peerConnection?.setRemoteDescription(sdpObserver, remoteDescription)
+
+    fun addIceCandidate(iceCandidate: IceCandidate) = peerConnection?.addIceCandidate(iceCandidate)
+
+    fun removeIceCandidates(iceCandidates: Array<IceCandidate>) {
+        peerConnection?.removeIceCandidates(iceCandidates)
+    }
+
+    fun attachLocalView(localSurfaceViewRenderer: SurfaceViewRenderer) {
+        localSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
+        this.localSurfaceViewRenderer = localSurfaceViewRenderer
+        localVideoTrack?.addSink(this@RtcClient.localSurfaceViewRenderer)
+    }
+
+    fun attachRemoteView(remoteSurfaceViewRenderer: SurfaceViewRenderer) {
+        remoteSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
+        this.remoteSurfaceViewRenderer = remoteSurfaceViewRenderer
+        remoteVideoTrack?.addSink(this@RtcClient.remoteSurfaceViewRenderer)
+    }
+
+    //TODO: Remote sink 처리 (현재 안보임 )
+    override fun onAddRemoteStream(remoteVideoTrack: VideoTrack) {
+        this.remoteVideoTrack = remoteVideoTrack
+        remoteSurfaceViewRenderer?.let{
+            remoteVideoTrack.addSink(it)
+        }
+    }
+
+    override fun removeVideoStream() {
+        this.remoteVideoTrack = null
+    }
+
+    private fun enableVideo(isEnabled: Boolean, videoCapturer: VideoCapturer) {
+        if (isEnabled) {
+            videoCapturer.startCapture(1280, 720, 30)
+        } else {
+            videoCapturer.stopCapture()
+        }
+    }
+
 }

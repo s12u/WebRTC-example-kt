@@ -28,7 +28,7 @@ class AuthManager private constructor() {
         auth.signInAnonymously()
             .addOnCompleteListener(onCompleteListener)
 
-    fun getUser(): FirebaseUser? = user
+    fun getUser(): FirebaseUser? = auth.currentUser
 
     companion object {
         private var instance: AuthManager? = null

@@ -15,14 +15,14 @@ class RtcUtil {
             val deviceNames = enumerator.deviceNames
 
             // front camera
-            for(deviceName in deviceNames) {
+            for (deviceName in deviceNames) {
                 if (enumerator.isFrontFacing(deviceName)) {
                     return enumerator.createCapturer(deviceName, null)
                 }
             }
 
             // other camera
-            for(deviceName in deviceNames) {
+            for (deviceName in deviceNames) {
                 if (!enumerator.isFrontFacing(deviceName)) {
                     return enumerator.createCapturer(deviceName, null)
                 }

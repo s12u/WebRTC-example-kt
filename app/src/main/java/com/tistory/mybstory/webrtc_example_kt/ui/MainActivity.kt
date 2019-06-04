@@ -1,43 +1,106 @@
 package com.tistory.mybstory.webrtc_example_kt.ui
 
-import android.content.Intent
+import android.app.Activity
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.os.IBinder
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.tistory.mybstory.webrtc_example_kt.R
 import com.tistory.mybstory.webrtc_example_kt.base.BaseActivity
 import com.tistory.mybstory.webrtc_example_kt.databinding.ActivityMainBinding
+import com.tistory.mybstory.webrtc_example_kt.service.RtcService
 import com.tistory.mybstory.webrtc_example_kt.ui.viewmodel.MainViewModel
+import com.tistory.mybstory.webrtc_example_kt.util.extensions.await
+import com.tistory.mybstory.webrtc_example_kt.util.extensions.launchActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class MainActivity : BaseActivity() {
 
+    private val REQUEST_REQUIRED_PERMISSIONS = 0
+    private val MANDATORY_PERMISSIONS = arrayOf(
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+    )
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
+    private var service: RtcService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-        binding.viewModel =  ViewModelProviders.of(this).get(MainViewModel::class.java)
+        binding.viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         viewModel = binding.viewModel as MainViewModel
-        observeUser()
         initUI()
+        checkPermissions()
+        observeUser()
+        signIn()
     }
 
     private fun observeUser() = viewModel.observeUser().observe(this, Observer {
         binding.tvUid.text = it.uid
+
     })
 
+    val serviceConnection = object : ServiceConnection {
+        override fun onServiceDisconnected(p0: ComponentName?) {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun onServiceConnected(componentName: ComponentName?, iBinder: IBinder?) {
+            val binder = iBinder as RtcService.LocalBinder
+            Timber.e("Service attached!")
+            service = binder.getService()
+        }
+    }
+
     private fun initUI() {
-        binding.btnStart.setOnClickListener{
+        binding.btnStart.setOnClickListener {
             val bundle = Bundle()
             bundle.putString("remoteUID", binding.etTarget.text.toString())
+            bundle.putBoolean("isCaller", true)
             Timber.d("Remote uid on Main: %s", binding.etTarget.text.toString())
             launchActivity<CallActivity>(bundle)
         }
     }
+
+    fun signIn() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val user = viewModel.signIn().await()?.user
+            bindService()
+        }
+
+    }
+
+    private fun bindService() {
+        RtcService.startService(applicationContext)
+        RtcService.bindService(this@MainActivity, serviceConnection)
+    }
+
+    private fun checkPermissions() =
+        ActivityCompat.requestPermissions(this, MANDATORY_PERMISSIONS, REQUEST_REQUIRED_PERMISSIONS)
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        for (permission in permissions) {
+            if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission $permission is not granted", Toast.LENGTH_SHORT).show()
+                setResult(Activity.RESULT_CANCELED)
+                finish()
+                return
+            }
+        }
+    }
+
 }

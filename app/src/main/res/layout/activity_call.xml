@@ -1,12 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+        xmlns:appns="http://schemas.android.com/apk/res-auto">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+        <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_renderer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                appns:layout_constraintTop_toTopOf="parent"/>
+
+        <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/local_renderer"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                appns:layout_constraintTop_toTopOf="parent"
+                appns:layout_constraintStart_toStartOf="parent"
+                android:elevation="2dp"/>
+
+
+        <Button
+                android:id="@+id/button_hangup"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginBottom="40dp"
+                appns:layout_constraintStart_toStartOf="parent"
+                appns:layout_constraintEnd_toEndOf="parent"
+                appns:layout_constraintBottom_toBottomOf="parent"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </layout>

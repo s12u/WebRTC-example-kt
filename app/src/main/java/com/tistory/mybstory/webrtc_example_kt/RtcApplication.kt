@@ -15,7 +15,6 @@ class RtcApplication : Application() {
         super.onCreate()
 
         Timber.plant(Timber.DebugTree())
-        RtcService.startService(applicationContext)
     }
 
     override fun onTerminate() {
