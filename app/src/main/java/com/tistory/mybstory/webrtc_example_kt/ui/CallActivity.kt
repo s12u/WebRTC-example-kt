@@ -26,7 +26,6 @@ class CallActivity : Activity() {
             Timber.d("Remote uid : $remoteUID")
         }
 
-
         RtcService.bindService(applicationContext, serviceConnection)
     }
 
@@ -56,8 +55,16 @@ class CallActivity : Activity() {
         updateVideoView()
     }
 
+    override fun onDestroy() {
+        binding.localRenderer.release()
+        binding.remoteRenderer.release()
+        applicationContext.unbindService(serviceConnection)
+        super.onDestroy()
+    }
+
     private fun updateVideoView() {
         binding.localRenderer.setMirror(true)
+        binding.localRenderer.setZOrderOnTop(true)
         binding.localRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
         binding.localRenderer.requestLayout()
 

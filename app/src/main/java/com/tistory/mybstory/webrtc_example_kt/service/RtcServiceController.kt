@@ -66,7 +66,11 @@ class RtcServiceController constructor(context: Context) {
      *
      **/
 
-    fun offerDevice(remoteUid: String) = creteOffer(remoteUid)
+    fun offerDevice(remoteUid: String) {
+        Timber.e("Listening for ICE Candidates...(Caller)")
+        listenForIceCandidates(remoteUid)
+        creteOffer(remoteUid)
+    }
 
     fun creteOffer(remoteUid: String) {
         Timber.d("Creating offer....")
@@ -131,7 +135,6 @@ class RtcServiceController constructor(context: Context) {
             override fun onSetSuccess() {
                 super.onSetSuccess()
                 Timber.e("Remote session description for offer set!!")
-                listenForIceCandidates(remoteUid)
             }
         }, remoteDescription)
     }
@@ -179,6 +182,8 @@ class RtcServiceController constructor(context: Context) {
             RtcOffersRepository.getInstance()
                 .listenOffer(currentUid).subscribe({
                     startCallActivity(it.first)
+                    Timber.e("Listening for ICE Candidates...")
+                    listenForIceCandidates(it.first)
                     setRemoteAnswerDescription(it.first, it.second)
                     Timber.e("Remote description set")
                 }, {
@@ -196,7 +201,6 @@ class RtcServiceController constructor(context: Context) {
                 super.onSetSuccess()
                 Timber.e("Remote session description for answer set!!")
                 createAnswer(remoteUid)
-                listenForIceCandidates(remoteUid)
             }
         }, remoteDescription)
     }
@@ -250,7 +254,7 @@ class RtcServiceController constructor(context: Context) {
         }
 
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
-            Timber.e("ICE Connection state changed : %s" , iceConnectionState.name)
+            Timber.e("ICE Connection state changed : %s", iceConnectionState.name)
         }
     }
 
