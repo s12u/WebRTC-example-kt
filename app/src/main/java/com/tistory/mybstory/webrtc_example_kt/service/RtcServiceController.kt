@@ -36,7 +36,9 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun detachService() {
-        rtcClient// need to clear & detach
+        Timber.e("Service detached!!")
+        disposables.clear()
+        rtcClient.dispose()
     }
 
     fun getIceServers() {
@@ -181,9 +183,9 @@ class RtcServiceController constructor(context: Context) {
         disposables +=
             RtcOffersRepository.getInstance()
                 .listenOffer(currentUid).subscribe({
+                    listenForIceCandidates(it.first)
                     startCallActivity(it.first)
                     Timber.e("Listening for ICE Candidates...")
-                    listenForIceCandidates(it.first)
                     setRemoteAnswerDescription(it.first, it.second)
                     Timber.e("Remote description set")
                 }, {

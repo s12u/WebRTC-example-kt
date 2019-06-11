@@ -66,9 +66,10 @@ class MainActivity : BaseActivity() {
 
     private fun initUI() {
         binding.btnStart.setOnClickListener {
-            val bundle = Bundle()
-            bundle.putString("remoteUID", binding.etTarget.text.toString())
-            bundle.putBoolean("isCaller", true)
+            val bundle = Bundle().apply {
+                putString("remoteUID", binding.etTarget.text.toString())
+                putBoolean("isCaller", true)
+            }
             Timber.d("Remote uid on Main: %s", binding.etTarget.text.toString())
             launchActivity<CallActivity>(bundle)
         }
@@ -83,8 +84,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun bindService() {
-        RtcService.startService(applicationContext)
-        RtcService.bindService(this@MainActivity, serviceConnection)
+        RtcService.startServiceWithContext(applicationContext)
+        RtcService.bindService(this.applicationContext, serviceConnection)
     }
 
     private fun checkPermissions() =

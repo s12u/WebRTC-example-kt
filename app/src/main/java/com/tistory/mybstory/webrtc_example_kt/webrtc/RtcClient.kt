@@ -32,14 +32,7 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
     }
 
     companion object {
-        private var instance: RtcClient? = null
-
-        fun getInstance(context: Context): RtcClient {
-            if (instance == null) {
-                instance = RtcClient(context)
-            }
-            return instance!!
-        }
+        fun getInstance(context: Context) = RtcClient(context)
     }
 
     init {
@@ -109,9 +102,8 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
 
     fun addIceCandidate(iceCandidate: IceCandidate) = peerConnection?.addIceCandidate(iceCandidate)
 
-    fun removeIceCandidates(iceCandidates: Array<IceCandidate>) {
-        peerConnection?.removeIceCandidates(iceCandidates)
-    }
+    fun removeIceCandidates(iceCandidates: Array<IceCandidate>) = peerConnection?.removeIceCandidates(iceCandidates)
+
 
     fun attachLocalView(localSurfaceViewRenderer: SurfaceViewRenderer) {
         localSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
@@ -128,7 +120,7 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
     //TODO: Remote sink 처리 (현재 안보임 )
     override fun onAddRemoteStream(remoteVideoTrack: VideoTrack) {
         this.remoteVideoTrack = remoteVideoTrack
-        remoteSurfaceViewRenderer?.let{
+        remoteSurfaceViewRenderer?.let {
             remoteVideoTrack.addSink(it)
         }
     }
@@ -142,6 +134,17 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
             videoCapturer.startCapture(1280, 720, 30)
         } else {
             videoCapturer.stopCapture()
+        }
+    }
+
+    fun dispose() {
+        peerConnection?.close()
+        peerConnectionFactory.dispose()
+        eglBase.release()
+        surfaceTextureHelper.dispose()
+        videoCapturer?.run {
+            stopCapture()
+            dispose()
         }
     }
 

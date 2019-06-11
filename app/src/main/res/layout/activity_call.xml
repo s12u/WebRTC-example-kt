@@ -17,18 +17,32 @@
                 android:layout_width="140dp"
                 android:layout_height="140dp"
                 appns:layout_constraintTop_toTopOf="parent"
-                appns:layout_constraintStart_toStartOf="parent"
-                    />
+                appns:layout_constraintStart_toStartOf="parent"/>
 
 
-        <Button
-                android:id="@+id/button_hangup"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_marginBottom="40dp"
+        <ImageButton
+                android:id="@+id/button_answer_call"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_marginBottom="72dp"
                 appns:layout_constraintStart_toStartOf="parent"
                 appns:layout_constraintEnd_toEndOf="parent"
-                appns:layout_constraintBottom_toBottomOf="parent"/>
+                appns:layout_constraintBottom_toBottomOf="parent"
+                android:background="@drawable/bg_btn_round_call"
+                android:src="@drawable/ic_round_call_24px"/>
+
+        <ImageButton
+                android:id="@+id/button_hang_up"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_marginBottom="72dp"
+                appns:layout_constraintStart_toStartOf="parent"
+                appns:layout_constraintEnd_toEndOf="parent"
+                appns:layout_constraintBottom_toBottomOf="parent"
+                android:background="@drawable/bg_btn_round_call_end"
+                android:src="@drawable/ic_round_call_end_24px"
+                android:visibility="gone"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </layout>

@@ -33,7 +33,7 @@ class RtcService: Service() {
     }
 
     companion object {
-        fun startService(context: Context) = context.startService(Intent(context, RtcService::class.java))
+        fun startServiceWithContext(context: Context) = context.startService(Intent(context, RtcService::class.java))!!
         fun bindService(context: Context, serviceConnection: ServiceConnection)
                 = context.bindService(Intent(context, RtcService::class.java), serviceConnection, 0)
     }

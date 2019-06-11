@@ -43,16 +43,19 @@ class CallActivity : Activity() {
     }
 
     private fun onWebRtcConnected(service: RtcService) {
-        service.attachLocalView(binding.localRenderer)
-        service.attachRemoteView(binding.remoteRenderer)
-        if (intent!!.getBooleanExtra("isCaller", false)) {
-            service.offerDevice(remoteUID)
+        service.run {
+            attachLocalView(binding.localRenderer)
+            attachRemoteView(binding.remoteRenderer)
+            if (intent!!.getBooleanExtra("isCaller", false)) {
+                offerDevice(remoteUID)
+            }
         }
+
     }
 
     override fun onStart() {
         super.onStart()
-        updateVideoView()
+        updateViews()
     }
 
     override fun onDestroy() {
@@ -62,14 +65,18 @@ class CallActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun updateVideoView() {
-        binding.localRenderer.setMirror(true)
-        binding.localRenderer.setZOrderOnTop(true)
-        binding.localRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
-        binding.localRenderer.requestLayout()
+    private fun updateViews() {
+        binding.localRenderer.run {
+            setMirror(true)
+            setZOrderOnTop(true)
+            setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+            requestLayout()
+        }
 
-        binding.remoteRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
-        binding.remoteRenderer.setMirror(false)
-        binding.remoteRenderer.requestLayout()
+        binding.remoteRenderer.run {
+            setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+            setMirror(false)
+            requestLayout()
+        }
     }
 }
