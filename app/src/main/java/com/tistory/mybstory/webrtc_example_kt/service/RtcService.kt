@@ -5,13 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Binder
-import com.tistory.mybstory.webrtc_example_kt.RtcApplication
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 
 class RtcService: Service() {
 
-    private val serviceController: RtcServiceController by lazy{RtcServiceController(RtcApplication.applicationContext())}
+    private val serviceController: RtcServiceController by lazy{RtcServiceController()}
     private lateinit var localBinder: LocalBinder
 
     override fun onCreate() {
@@ -20,12 +19,17 @@ class RtcService: Service() {
         localBinder = LocalBinder()
     }
 
-    override fun onDestroy() {
+    override fun onTaskRemoved(rootIntent: Intent?) {
         serviceController.detachService()
-        super.onDestroy()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onBind(p0: Intent?) = localBinder
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        serviceController.detachService()
+        return super.onUnbind(intent)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         serviceController.attachService(this)
@@ -39,7 +43,7 @@ class RtcService: Service() {
     }
 
     inner class LocalBinder: Binder() {
-        fun getService() : RtcService = RtcService()
+        fun getService() : RtcService = this@RtcService
     }
 
     fun attachLocalView(localRenderer: SurfaceViewRenderer) = serviceController.attachLocalView(localRenderer)

@@ -1,6 +1,5 @@
 package com.tistory.mybstory.webrtc_example_kt.service
 
-import android.content.Context
 import android.os.Bundle
 import com.google.firebase.firestore.DocumentChange
 import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
@@ -12,22 +11,27 @@ import com.tistory.mybstory.webrtc_example_kt.ui.CallActivity
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.launchActivity
 import com.tistory.mybstory.webrtc_example_kt.webrtc.RtcClient
 import com.tistory.mybstory.webrtc_example_kt.webrtc.SimpleSdpObserver
+import io.reactivex.Completable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
+import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnection
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 
-class RtcServiceController constructor(context: Context) {
+class RtcServiceController constructor() {
 
-    val rtcClient by lazy { RtcClient.getInstance(context) }
-    val iceServersRepository by lazy { IceServersRepository.getInstance() }
+    private var rtcClient: RtcClient? = null
+    private val iceServersRepository by lazy { IceServersRepository.getInstance() }
 
     var disposables = CompositeDisposable()
 
-    lateinit var rtcService: RtcService
+    private var rtcService: RtcService? = null
 
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
@@ -38,7 +42,10 @@ class RtcServiceController constructor(context: Context) {
     fun detachService() {
         Timber.e("Service detached!!")
         disposables.clear()
-        rtcClient.dispose()
+        rtcClient?.close()
+        rtcClient = null
+        rtcService = null
+        // TODO: need to re-subscribe for offer
     }
 
     fun getIceServers() {
@@ -46,6 +53,7 @@ class RtcServiceController constructor(context: Context) {
         disposables += iceServersRepository.getIceServers()
             .subscribe({
                 Timber.e("Ice server count : %d", it.size)
+                rtcClient = RtcClient(rtcService!!.applicationContext)
                 initRtcClient(it, peerConnectionHandler)
                 listenForOffer(AuthManager.getInstance().getUser()!!.uid)
             }, {
@@ -55,12 +63,12 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun initRtcClient(iceServers: List<PeerConnection.IceServer>, peerConnectionHandler: PeerConnectionHandler) =
-        rtcClient.initPeerConnection(iceServers, peerConnectionHandler)
+        rtcClient?.initPeerConnection(iceServers, peerConnectionHandler)
 
 
-    fun attachLocalView(localRender: SurfaceViewRenderer) = rtcClient.attachLocalView(localRender)
+    fun attachLocalView(localRender: SurfaceViewRenderer) = rtcClient?.attachLocalView(localRender)
 
-    fun attachRemoteView(remoteRender: SurfaceViewRenderer) = rtcClient.attachRemoteView(remoteRender)
+    fun attachRemoteView(remoteRender: SurfaceViewRenderer) = rtcClient?.attachRemoteView(remoteRender)
 
     /**
      *
@@ -75,12 +83,12 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun creteOffer(remoteUid: String) {
-        Timber.d("Creating offer....")
-        rtcClient.createOffer(object : SimpleSdpObserver() {
+        Timber.e("Creating offer....")
+        rtcClient?.createOffer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(p0: SessionDescription?) {
                 p0?.let {
                     Timber.e("Local description for offer created!")
-                    setLocalOfferDescription(p0, remoteUid)
+                    setLocalOfferDescription(it, remoteUid)
                 }
             }
 
@@ -93,7 +101,7 @@ class RtcServiceController constructor(context: Context) {
 
 
     fun setLocalOfferDescription(localDescription: SessionDescription, remoteUid: String) {
-        rtcClient.setLocalDescription(object : SimpleSdpObserver() {
+        rtcClient?.setLocalDescription(object : SimpleSdpObserver() {
             override fun onSetSuccess() {
                 Timber.e("Local description set!!, Sending offer!!")
                 sendOffer(remoteUid, localDescription)
@@ -129,7 +137,7 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun setRemoteOfferDescription(remoteUid: String, remoteDescription: SessionDescription) {
-        rtcClient.setRemoteDescription(object : SimpleSdpObserver() {
+        rtcClient?.setRemoteDescription(object : SimpleSdpObserver() {
             override fun onSetFailure(p0: String?) {
                 super.onSetFailure(p0)
             }
@@ -145,12 +153,18 @@ class RtcServiceController constructor(context: Context) {
         disposables +=
             IceCandidatesRepository.getInstance()
                 .get(remoteUid).subscribe {
-                    if (it.type == DocumentChange.Type.ADDED) {
-                        rtcClient.addIceCandidate(it.value.toIceCandidate())
-                        Timber.e("Ice candidate added!!")
-                    } else {
-                        rtcClient.removeIceCandidates(arrayOf(it.value.toIceCandidate()))
-                        Timber.e("Ice candidate removed!!")
+                    when (it.type) {
+                        DocumentChange.Type.ADDED -> {
+                            rtcClient?.addIceCandidate(it.value.toIceCandidate())
+                            Timber.e("Ice candidate added!!")
+                        }
+                        DocumentChange.Type.REMOVED -> {
+                            rtcClient?.removeIceCandidates(arrayOf(it.value.toIceCandidate()))
+                            Timber.e("Ice candidate removed!!")
+                        }
+                        else -> {
+                            Timber.e("unknown type of operation")
+                        }
                     }
                 }
     }
@@ -194,7 +208,7 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun setRemoteAnswerDescription(remoteUid: String, remoteDescription: SessionDescription) {
-        rtcClient.setRemoteDescription(object : SimpleSdpObserver() {
+        rtcClient?.setRemoteDescription(object : SimpleSdpObserver() {
             override fun onSetFailure(p0: String?) {
                 super.onSetFailure(p0)
             }
@@ -209,7 +223,7 @@ class RtcServiceController constructor(context: Context) {
 
     fun createAnswer(remoteUid: String) {
         Timber.e("Creating answer....")
-        rtcClient.createAnswer(object : SimpleSdpObserver() {
+        rtcClient?.createAnswer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(p0: SessionDescription?) {
                 p0?.let {
                     Timber.e("Local description for answer created!")
@@ -225,7 +239,7 @@ class RtcServiceController constructor(context: Context) {
     }
 
     fun setLocalAnswerDescription(remoteUid: String, localDescription: SessionDescription) {
-        rtcClient.setLocalDescription(object : SimpleSdpObserver() {
+        rtcClient?.setLocalDescription(object : SimpleSdpObserver() {
             override fun onSetSuccess() {
                 Timber.e("Local description set!!, Creating Answer!!")
                 sendAnswer(remoteUid, localDescription)
@@ -249,10 +263,12 @@ class RtcServiceController constructor(context: Context) {
     val peerConnectionHandler: PeerConnectionHandler = object : PeerConnectionHandler {
         override fun onIceCandidate(iceCandidate: IceCandidate) {
             sendIceCandidate(iceCandidate)
+            Timber.e("onIceCandidate() called")
         }
 
         override fun onIceCandidatesRemoved(iceCandidates: Array<IceCandidate>) {
             removeIceCandidates(iceCandidates)
+            Timber.e("onIceCandidatesRemoved() called")
         }
 
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
@@ -264,7 +280,7 @@ class RtcServiceController constructor(context: Context) {
         val bundle = Bundle()
         bundle.putString("remoteUID", remoteUid)
         bundle.putBoolean("isCaller", false)
-        rtcService.launchActivity<CallActivity>(bundle)
+        rtcService!!.launchActivity<CallActivity>(bundle)
     }
 
 }

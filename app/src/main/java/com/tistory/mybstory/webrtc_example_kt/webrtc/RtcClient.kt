@@ -6,8 +6,9 @@ import com.tistory.mybstory.webrtc_example_kt.base.RemoteVideoHandler
 import com.tistory.mybstory.webrtc_example_kt.util.RtcUtil
 import org.webrtc.*
 import org.webrtc.PeerConnection.IceServer
+import timber.log.Timber
 
-class RtcClient private constructor(context: Context) : RemoteVideoHandler {
+class RtcClient constructor(context: Context) : RemoteVideoHandler {
 
     private val eglBase = EglBase.create()
     private var peerConnectionFactory: PeerConnectionFactory
@@ -31,11 +32,8 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
         mandatory.add(MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"))
     }
 
-    companion object {
-        fun getInstance(context: Context) = RtcClient(context)
-    }
-
     init {
+        Timber.e("RtcClient instance created!!")
         val options = PeerConnectionFactory.InitializationOptions.builder(context)
             .createInitializationOptions()
         PeerConnectionFactory.initialize(options)
@@ -117,7 +115,6 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
         remoteVideoTrack?.addSink(this@RtcClient.remoteSurfaceViewRenderer)
     }
 
-    //TODO: Remote sink 처리 (현재 안보임 )
     override fun onAddRemoteStream(remoteVideoTrack: VideoTrack) {
         this.remoteVideoTrack = remoteVideoTrack
         remoteSurfaceViewRenderer?.let {
@@ -137,15 +134,20 @@ class RtcClient private constructor(context: Context) : RemoteVideoHandler {
         }
     }
 
-    fun dispose() {
-        peerConnection?.close()
+    fun close() {
+        peerConnection?.run {
+            close()
+            dispose()
+        }
         peerConnectionFactory.dispose()
-        eglBase.release()
-        surfaceTextureHelper.dispose()
         videoCapturer?.run {
             stopCapture()
             dispose()
         }
+        localAudioSource?.dispose()
+        localVideoSource?.dispose()
+        surfaceTextureHelper.dispose()
+        eglBase.release()
     }
 
 }

@@ -34,7 +34,6 @@ class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
-    private var service: RtcService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,18 +50,6 @@ class MainActivity : BaseActivity() {
         binding.tvUid.text = it.uid
 
     })
-
-    val serviceConnection = object : ServiceConnection {
-        override fun onServiceDisconnected(p0: ComponentName?) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
-
-        override fun onServiceConnected(componentName: ComponentName?, iBinder: IBinder?) {
-            val binder = iBinder as RtcService.LocalBinder
-            Timber.e("Service attached!")
-            service = binder.getService()
-        }
-    }
 
     private fun initUI() {
         binding.btnStart.setOnClickListener {
@@ -85,7 +72,6 @@ class MainActivity : BaseActivity() {
 
     private fun bindService() {
         RtcService.startServiceWithContext(applicationContext)
-        RtcService.bindService(this.applicationContext, serviceConnection)
     }
 
     private fun checkPermissions() =

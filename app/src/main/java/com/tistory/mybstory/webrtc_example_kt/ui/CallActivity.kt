@@ -37,7 +37,7 @@ class CallActivity : Activity() {
 
         override fun onServiceConnected(componentName: ComponentName?, iBinder: IBinder?) {
             val binder = iBinder as RtcService.LocalBinder
-            Timber.e("Service attached!")
+            Timber.e("Service bound on call activity!!")
             onWebRtcConnected(binder.getService())
         }
     }

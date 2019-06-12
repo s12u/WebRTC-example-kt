@@ -61,8 +61,6 @@ class IceCandidatesRepository private constructor() {
             }.addOnSuccessListener {
                 Timber.e("Transaction Success : Ice candidates removal")
             }
-
-
         }
 
 
