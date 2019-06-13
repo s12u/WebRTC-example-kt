@@ -67,7 +67,6 @@ class MainActivity : BaseActivity() {
             val user = viewModel.signIn().await()?.user
             bindService()
         }
-
     }
 
     private fun bindService() {

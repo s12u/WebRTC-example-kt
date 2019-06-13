@@ -46,7 +46,6 @@ class RtcServiceController {
         rtcClient?.close()
         rtcClient = null
         rtcService = null
-        // TODO: need to re-subscribe for offer
     }
 
     fun resetRtcClient() {
@@ -82,6 +81,8 @@ class RtcServiceController {
      * for caller
      *
      **/
+
+    //TODO: need to delete offer/answer/ice candidates/ at connection closed
 
     fun offerDevice(remoteUid: String) {
         Timber.e("Listening for ICE Candidates...(Caller)")
@@ -207,7 +208,7 @@ class RtcServiceController {
             .listenOffer(currentUid)
             .doOnNext {
                 startCallActivity(it.first)
-            }.combineLatest(
+            }.combineLatest( // TODO: need to implement on caller-logic
                 callHandler.callback.toFlowable(BackpressureStrategy.BUFFER) // TODO: dispose() 해야 함
             ).subscribe({
                 Timber.e("Listening for ICE Candidates..(Callee)")
@@ -219,6 +220,7 @@ class RtcServiceController {
                     }
                     CallEvent.CallAction.HANG_UP -> {
                         // close connection
+
                     }
 
                 }
@@ -294,7 +296,7 @@ class RtcServiceController {
 
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
             Timber.e("ICE Connection state changed : %s", iceConnectionState.name)
-            callHandler?.onConnectionStateChanged(iceConnectionState)
+            callHandler.onConnectionStateChanged(iceConnectionState)
         }
     }
 

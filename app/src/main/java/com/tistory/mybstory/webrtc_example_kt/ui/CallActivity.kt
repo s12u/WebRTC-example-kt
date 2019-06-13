@@ -18,6 +18,8 @@ import org.webrtc.PeerConnection
 import org.webrtc.RendererCommon
 import timber.log.Timber
 
+
+// TODO: need to make <Back button> disabled
 class CallActivity : Activity() {
 
     private var service: RtcService? = null
@@ -87,7 +89,6 @@ class CallActivity : Activity() {
         binding.localRenderer.release()
         binding.remoteRenderer.release()
         callStateDisposable?.dispose()
-        applicationContext.unbindService(serviceConnection)
         service = null
         super.onDestroy()
     }
@@ -123,6 +124,7 @@ class CallActivity : Activity() {
 
     private fun hangUpCall() {
         CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
+        applicationContext.unbindService(serviceConnection)
         finish()
     }
 

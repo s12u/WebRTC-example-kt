@@ -27,8 +27,6 @@ class RtcService : Service() {
     override fun onBind(p0: Intent?) = localBinder
 
     override fun onUnbind(intent: Intent?): Boolean {
-        //TODO: need to reset rtc client
-        //serviceController.detachService()
         serviceController.resetRtcClient()
         return super.onUnbind(intent)
     }
