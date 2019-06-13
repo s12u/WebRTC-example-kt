@@ -8,9 +8,9 @@ import android.os.Binder
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 
-class RtcService: Service() {
+class RtcService : Service() {
 
-    private val serviceController: RtcServiceController by lazy{RtcServiceController()}
+    private val serviceController: RtcServiceController by lazy { RtcServiceController() }
     private lateinit var localBinder: LocalBinder
 
     override fun onCreate() {
@@ -27,7 +27,9 @@ class RtcService: Service() {
     override fun onBind(p0: Intent?) = localBinder
 
     override fun onUnbind(intent: Intent?): Boolean {
-        serviceController.detachService()
+        //TODO: need to reset rtc client
+        //serviceController.detachService()
+        serviceController.resetRtcClient()
         return super.onUnbind(intent)
     }
 
@@ -38,12 +40,13 @@ class RtcService: Service() {
 
     companion object {
         fun startServiceWithContext(context: Context) = context.startService(Intent(context, RtcService::class.java))!!
-        fun bindService(context: Context, serviceConnection: ServiceConnection)
-                = context.bindService(Intent(context, RtcService::class.java), serviceConnection, 0)
+        fun bindService(context: Context, serviceConnection: ServiceConnection) =
+            context.bindService(Intent(context, RtcService::class.java), serviceConnection, 0)
+
     }
 
-    inner class LocalBinder: Binder() {
-        fun getService() : RtcService = this@RtcService
+    inner class LocalBinder : Binder() {
+        fun getService(): RtcService = this@RtcService
     }
 
     fun attachLocalView(localRenderer: SurfaceViewRenderer) = serviceController.attachLocalView(localRenderer)

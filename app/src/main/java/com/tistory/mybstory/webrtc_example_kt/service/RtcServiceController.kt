@@ -3,6 +3,7 @@ package com.tistory.mybstory.webrtc_example_kt.service
 import android.os.Bundle
 import com.google.firebase.firestore.DocumentChange
 import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
+import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent
 import com.tistory.mybstory.webrtc_example_kt.data.repository.IceCandidatesRepository
 import com.tistory.mybstory.webrtc_example_kt.data.repository.IceServersRepository
 import com.tistory.mybstory.webrtc_example_kt.data.repository.RtcAnswersRepository
@@ -11,22 +12,20 @@ import com.tistory.mybstory.webrtc_example_kt.ui.CallActivity
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.launchActivity
 import com.tistory.mybstory.webrtc_example_kt.webrtc.RtcClient
 import com.tistory.mybstory.webrtc_example_kt.webrtc.SimpleSdpObserver
-import io.reactivex.Completable
+import io.reactivex.BackpressureStrategy
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.combineLatest
 import io.reactivex.rxkotlin.plusAssign
-import io.reactivex.schedulers.Schedulers
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnection
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 
-class RtcServiceController constructor() {
+class RtcServiceController {
 
     private var rtcClient: RtcClient? = null
+    private val callHandler by lazy { CallHandler.getInstance() }
     private val iceServersRepository by lazy { IceServersRepository.getInstance() }
 
     var disposables = CompositeDisposable()
@@ -35,6 +34,7 @@ class RtcServiceController constructor() {
 
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
+        CallHandler.getInstance().create()
         rtcService = service
         getIceServers()
     }
@@ -42,10 +42,17 @@ class RtcServiceController constructor() {
     fun detachService() {
         Timber.e("Service detached!!")
         disposables.clear()
+        CallHandler.getInstance().dispose()
         rtcClient?.close()
         rtcClient = null
         rtcService = null
         // TODO: need to re-subscribe for offer
+    }
+
+    fun resetRtcClient() {
+        disposables.clear()
+        rtcClient?.reset()
+        getIceServers()
     }
 
     fun getIceServers() {
@@ -192,19 +199,33 @@ class RtcServiceController constructor() {
      *
      **/
 
+
+    // TODO: action에 따라서 분기 시켜야 함
     fun listenForOffer(currentUid: String) {
         Timber.e("Wating for offer...")
-        disposables +=
-            RtcOffersRepository.getInstance()
-                .listenOffer(currentUid).subscribe({
-                    listenForIceCandidates(it.first)
-                    startCallActivity(it.first)
-                    Timber.e("Listening for ICE Candidates...")
-                    setRemoteAnswerDescription(it.first, it.second)
-                    Timber.e("Remote description set")
-                }, {
-                    // error
-                })
+        disposables += RtcOffersRepository.getInstance()
+            .listenOffer(currentUid)
+            .doOnNext {
+                startCallActivity(it.first)
+            }.combineLatest(
+                callHandler.callback.toFlowable(BackpressureStrategy.BUFFER) // TODO: dispose() 해야 함
+            ).subscribe({
+                Timber.e("Listening for ICE Candidates..(Callee)")
+                listenForIceCandidates(it.first.first)
+                when (it.second.action) {
+                    CallEvent.CallAction.ACCEPT -> {
+                        setRemoteAnswerDescription(it.first.first, it.first.second)
+                        Timber.e("Remote description set")
+                    }
+                    CallEvent.CallAction.HANG_UP -> {
+                        // close connection
+                    }
+
+                }
+
+            }, {
+                // error
+            })
     }
 
     fun setRemoteAnswerDescription(remoteUid: String, remoteDescription: SessionDescription) {
@@ -273,6 +294,7 @@ class RtcServiceController constructor() {
 
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
             Timber.e("ICE Connection state changed : %s", iceConnectionState.name)
+            callHandler?.onConnectionStateChanged(iceConnectionState)
         }
     }
 

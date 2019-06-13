@@ -134,6 +134,13 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         }
     }
 
+    fun reset() {
+        peerConnection?.run {
+            close()
+            dispose()
+        }
+    }
+
     fun close() {
         peerConnection?.run {
             close()
