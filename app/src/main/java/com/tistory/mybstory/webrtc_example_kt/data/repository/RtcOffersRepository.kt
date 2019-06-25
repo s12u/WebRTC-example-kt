@@ -17,12 +17,12 @@ class RtcOffersRepository private constructor() {
     fun create(recipientId: String, localSessionDescription: SessionDescription) = Completable.create {
         firestore.collection(OFFER_PATH)
             .document(recipientId)
-            // TODO: need to refactor AuthManager uid fetch method
-            .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription).apply { senderId = AuthManager.getInstance().getUser()!!.uid })
+            .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription)
+                .apply { senderId = AuthManager.getInstance().getUser()!!.uid })
         it.onComplete()
     }
 
-    fun listenOffer(currentUid : String): Flowable<Pair<String, SessionDescription>> =
+    fun listenOffer(currentUid: String): Flowable<Pair<String, SessionDescription>> =
         firestore.collection(OFFER_PATH)
             .document(currentUid)
             .snapshotEvents<FirestoreSessionDescription>()

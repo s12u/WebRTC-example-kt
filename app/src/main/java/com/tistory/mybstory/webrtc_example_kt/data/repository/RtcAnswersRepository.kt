@@ -17,8 +17,8 @@ class RtcAnswersRepository private constructor() {
     fun create(recipientId: String, localSessionDescription: SessionDescription) = Completable.create {
         firestore.collection(ANSWER_PATH)
             .document(recipientId)
-                // TODO: need to refactor AuthManager uid fetch method
-            .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription).apply { senderId = AuthManager.getInstance().getUser()!!.uid })
+            .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription)
+                .apply { senderId = AuthManager.getInstance().getUser()!!.uid })
         it.onComplete()
     }
 

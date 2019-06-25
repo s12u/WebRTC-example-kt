@@ -209,7 +209,7 @@ class RtcServiceController {
             .doOnNext {
                 startCallActivity(it.first)
             }.combineLatest( // TODO: need to implement on caller-logic
-                callHandler.callback.toFlowable(BackpressureStrategy.BUFFER) // TODO: dispose() 해야 함
+                callHandler.callback.toFlowable(BackpressureStrategy.BUFFER)
             ).subscribe({
                 Timber.e("Listening for ICE Candidates..(Callee)")
                 listenForIceCandidates(it.first.first)

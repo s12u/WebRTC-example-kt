@@ -86,7 +86,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         peerConnection?.addStream(localMediaStream)
     }
 
-    // TODO : need to run on the other thread
+    // TODO : need to run on new thread
 
     fun createOffer(sdpObserver: SimpleSdpObserver) = peerConnection?.createOffer(sdpObserver, mediaConstraints)
 
