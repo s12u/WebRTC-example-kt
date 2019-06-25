@@ -70,8 +70,15 @@ class CallActivity : Activity() {
                     PeerConnection.IceConnectionState.CHECKING -> {
 
                     }
+                    PeerConnection.IceConnectionState.CLOSED -> {
+                        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
+                        hangUpCall()
+                        // TODO: remove (offer/answer/ice candidates) from db
+                    }
                     PeerConnection.IceConnectionState.DISCONNECTED -> {
-                        finish()
+                        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
+                        hangUpCall()
+                        // TODO: remove (offer/answer/ice candidates) from db
                     }
                     else -> {
                     }
@@ -86,9 +93,8 @@ class CallActivity : Activity() {
     }
 
     override fun onDestroy() {
-        binding.localRenderer.release()
-        binding.remoteRenderer.release()
         callStateDisposable?.dispose()
+        RtcService.unbindService(applicationContext, serviceConnection)
         service = null
         super.onDestroy()
     }
@@ -103,7 +109,7 @@ class CallActivity : Activity() {
 
         binding.remoteRenderer.run {
             setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
-            setMirror(false)
+            setMirror(true)
             requestLayout()
         }
 
@@ -114,6 +120,11 @@ class CallActivity : Activity() {
         binding.buttonHangUp.setOnClickListener {
             hangUpCall()
         }
+
+        binding.buttonSwitchCamera.setOnClickListener {
+            switchCamera()
+        }
+
     }
 
     private fun acceptCall() {
@@ -124,8 +135,11 @@ class CallActivity : Activity() {
 
     private fun hangUpCall() {
         CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
-        applicationContext.unbindService(serviceConnection)
         finish()
+    }
+
+    private fun switchCamera() {
+        service?.switchCamera()
     }
 
 }

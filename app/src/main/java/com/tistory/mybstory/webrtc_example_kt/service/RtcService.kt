@@ -27,7 +27,7 @@ class RtcService : Service() {
     override fun onBind(p0: Intent?) = localBinder
 
     override fun onUnbind(intent: Intent?): Boolean {
-        serviceController.resetRtcClient()
+//        serviceController.resetRtcClient()
         return super.onUnbind(intent)
     }
 
@@ -40,7 +40,8 @@ class RtcService : Service() {
         fun startServiceWithContext(context: Context) = context.startService(Intent(context, RtcService::class.java))!!
         fun bindService(context: Context, serviceConnection: ServiceConnection) =
             context.bindService(Intent(context, RtcService::class.java), serviceConnection, 0)
-
+        fun unbindService(context: Context, serviceConnection: ServiceConnection) =
+            context.unbindService(serviceConnection)
     }
 
     inner class LocalBinder : Binder() {
@@ -50,6 +51,8 @@ class RtcService : Service() {
     fun attachLocalView(localRenderer: SurfaceViewRenderer) = serviceController.attachLocalView(localRenderer)
 
     fun attachRemoteView(remoteRenderer: SurfaceViewRenderer) = serviceController.attachRemoteView(remoteRenderer)
+
+    fun switchCamera() = serviceController.switchCamera()
 
     fun offerDevice(remoteUid: String) = serviceController.offerDevice(remoteUid)
 

@@ -41,8 +41,8 @@ class RtcServiceController {
 
     fun detachService() {
         Timber.e("Service detached!!")
+        callHandler.dispose()
         disposables.clear()
-        CallHandler.getInstance().dispose()
         rtcClient?.close()
         rtcClient = null
         rtcService = null
@@ -75,6 +75,8 @@ class RtcServiceController {
     fun attachLocalView(localRender: SurfaceViewRenderer) = rtcClient?.attachLocalView(localRender)
 
     fun attachRemoteView(remoteRender: SurfaceViewRenderer) = rtcClient?.attachRemoteView(remoteRender)
+
+    fun switchCamera() = rtcClient?.switchCamera()
 
     /**
      *
@@ -220,7 +222,7 @@ class RtcServiceController {
                     }
                     CallEvent.CallAction.HANG_UP -> {
                         // close connection
-
+                        rtcClient?.reset()
                     }
 
                 }

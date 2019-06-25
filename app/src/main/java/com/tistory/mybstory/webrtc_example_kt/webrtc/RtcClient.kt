@@ -14,7 +14,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
     private var peerConnectionFactory: PeerConnectionFactory
     private var peerConnection: PeerConnection? = null
     private var surfaceTextureHelper: SurfaceTextureHelper
-    private var videoCapturer: VideoCapturer?
+    private var videoCapturer: CameraVideoCapturer?
 
     private var localVideoSource: VideoSource? = null
     private var localVideoTrack: VideoTrack? = null
@@ -54,7 +54,6 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
             localVideoSource = peerConnectionFactory.createVideoSource(false)
             localVideoTrack = peerConnectionFactory.createVideoTrack("ARDAMSv0", localVideoSource)
             it.initialize(surfaceTextureHelper, context, localVideoSource!!.capturerObserver)
-            enableVideo(true, it)
         }
 
         localAudioSource = peerConnectionFactory.createAudioSource(mediaConstraints)
@@ -107,6 +106,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         localSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
         this.localSurfaceViewRenderer = localSurfaceViewRenderer
         localVideoTrack?.addSink(this@RtcClient.localSurfaceViewRenderer)
+        videoCapturer?.let { enableVideo(true, it) }
     }
 
     fun attachRemoteView(remoteSurfaceViewRenderer: SurfaceViewRenderer) {
@@ -134,27 +134,37 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         }
     }
 
-    fun reset() {
-        peerConnection?.run {
-            close()
-            dispose()
-        }
+    // TODO: error on switch camera
+    fun switchCamera(cameraSwitchHandler: CameraVideoCapturer.CameraSwitchHandler? = null) =
+        videoCapturer?.switchCamera(cameraSwitchHandler)
+
+    fun detachViews() {
+        localSurfaceViewRenderer?.release()
+        remoteSurfaceViewRenderer?.release()
+        localSurfaceViewRenderer = null
+        remoteSurfaceViewRenderer = null
     }
 
-    fun close() {
-        peerConnection?.run {
-            close()
-            dispose()
-        }
-        peerConnectionFactory.dispose()
+    fun reset() {
         videoCapturer?.run {
             stopCapture()
             dispose()
         }
-        localAudioSource?.dispose()
-        localVideoSource?.dispose()
+        detachViews()
+        peerConnection?.close()
+    }
+
+    fun close() {
+        detachViews()
+        peerConnection?.run {
+            dispose()
+        }
         surfaceTextureHelper.dispose()
         eglBase.release()
+        videoCapturer?.dispose()
+        localAudioSource?.dispose()
+        localVideoSource?.dispose()
+        peerConnectionFactory.dispose()
     }
 
 }
