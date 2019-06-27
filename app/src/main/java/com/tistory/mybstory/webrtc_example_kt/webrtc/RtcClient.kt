@@ -134,7 +134,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         }
     }
 
-    // TODO: error on switch camera
+    // TODO: error on switching camera
     fun switchCamera(cameraSwitchHandler: CameraVideoCapturer.CameraSwitchHandler? = null) =
         videoCapturer?.switchCamera(cameraSwitchHandler)
 
@@ -146,6 +146,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
     }
 
     fun reset() {
+        Timber.e("RTC Client reset")
         videoCapturer?.run {
             stopCapture()
             dispose()

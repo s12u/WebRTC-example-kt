@@ -6,6 +6,8 @@ import org.webrtc.PeerConnection.IceConnectionState
 
 class CallHandler {
 
+    var callback: PublishSubject<CallEvent> = PublishSubject.create()
+
     companion object {
         private var instance: CallHandler? = null
 
@@ -16,10 +18,6 @@ class CallHandler {
             return instance!!
         }
     }
-
-    var callback = create()
-
-    fun create() = PublishSubject.create<CallEvent>()
 
     fun dispose() = callback.onComplete()
 

@@ -20,9 +20,11 @@ import timber.log.Timber
 
 
 // TODO: need to make <Back button> disabled
+// TODO: need to implement "reject" function
 class CallActivity : Activity() {
 
     private var service: RtcService? = null
+    private val callHandler by lazy { CallHandler.getInstance() }
     private var callStateDisposable: Disposable? = null
     private lateinit var remoteUID: String
     private lateinit var binding: ActivityCallBinding
@@ -59,24 +61,23 @@ class CallActivity : Activity() {
 
             if (intent!!.getBooleanExtra("isCaller", false)) {
                 offerDevice(remoteUID)
+                callHandler.onActionPerformed(CallEvent.CallAction.READY)
                 binding.buttonAnswerCall.visibility = View.GONE
                 binding.buttonHangUp.visibility = View.VISIBLE
             }
         }
 
-        callStateDisposable = CallHandler.getInstance().callback
+        callStateDisposable = callHandler.callback
             .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe {
                 when (it.iceConnectionState) {
                     PeerConnection.IceConnectionState.CHECKING -> {
 
                     }
                     PeerConnection.IceConnectionState.CLOSED -> {
-                        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
                         hangUpCall()
                         // TODO: remove (offer/answer/ice candidates) from db
                     }
                     PeerConnection.IceConnectionState.DISCONNECTED -> {
-                        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
                         hangUpCall()
                         // TODO: remove (offer/answer/ice candidates) from db
                     }
@@ -128,13 +129,13 @@ class CallActivity : Activity() {
     }
 
     private fun acceptCall() {
-        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.ACCEPT)
+        callHandler.onActionPerformed(CallEvent.CallAction.ACCEPT)
         binding.buttonAnswerCall.visibility = View.GONE
         binding.buttonHangUp.visibility = View.VISIBLE
     }
 
     private fun hangUpCall() {
-        CallHandler.getInstance().onActionPerformed(CallEvent.CallAction.HANG_UP)
+        callHandler.onActionPerformed(CallEvent.CallAction.HANG_UP)
         finish()
     }
 

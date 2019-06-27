@@ -4,6 +4,7 @@ import android.os.Bundle
 import com.google.firebase.firestore.DocumentChange
 import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
 import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent
+import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent.CallAction
 import com.tistory.mybstory.webrtc_example_kt.data.repository.IceCandidatesRepository
 import com.tistory.mybstory.webrtc_example_kt.data.repository.IceServersRepository
 import com.tistory.mybstory.webrtc_example_kt.data.repository.RtcAnswersRepository
@@ -21,20 +22,23 @@ import org.webrtc.PeerConnection
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
+import java.util.concurrent.TimeoutException
 
 class RtcServiceController {
 
     private var rtcClient: RtcClient? = null
     private val callHandler by lazy { CallHandler.getInstance() }
     private val iceServersRepository by lazy { IceServersRepository.getInstance() }
+    private val offersRepository by lazy { RtcOffersRepository.getInstance() }
+    private val answersRepository by lazy { RtcAnswersRepository.getInstance() }
+    private val iceCandidatesRepository by lazy { IceCandidatesRepository.getInstance() }
 
-    var disposables = CompositeDisposable()
+    private var disposables = CompositeDisposable()
 
     private var rtcService: RtcService? = null
 
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
-        CallHandler.getInstance().create()
         rtcService = service
         getIceServers()
     }
@@ -124,8 +128,8 @@ class RtcServiceController {
     }
 
     fun sendOffer(remoteUid: String, localDescription: SessionDescription) {
-        disposables += RtcOffersRepository.getInstance()
-            .create(remoteUid, localDescription)
+        disposables += offersRepository.create(remoteUid, localDescription)
+            //.timeout(20, TimeUnit.SECONDS)
             .subscribe(
                 {
                     // success
@@ -133,15 +137,21 @@ class RtcServiceController {
                     listenForAnswer(remoteUid)
                 },
                 {
+                    if (it is TimeoutException) {
+                        //TODO: timeout.....remove offer from db
+                        //callHandler.onActionPerformed(CallAction.HANG_UP)
+                    }
                     // error
                 })
     }
 
     fun listenForAnswer(remoteUid: String) {
-        disposables += RtcAnswersRepository.getInstance()
+        disposables += answersRepository
             .listenAnswer()
+            .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.BUFFER))
             .subscribe {
-                setRemoteOfferDescription(remoteUid, it)
+                handleCallEvent(Pair(remoteUid, it.first), it.second)
+//                setRemoteOfferDescription(remoteUid, it.first)
             }
 
     }
@@ -161,8 +171,8 @@ class RtcServiceController {
 
     fun listenForIceCandidates(remoteUid: String) {
         disposables +=
-            IceCandidatesRepository.getInstance()
-                .get(remoteUid).subscribe {
+            iceCandidatesRepository.get(remoteUid)
+                .subscribe {
                     when (it.type) {
                         DocumentChange.Type.ADDED -> {
                             rtcClient?.addIceCandidate(it.value.toIceCandidate())
@@ -181,8 +191,7 @@ class RtcServiceController {
 
     fun sendIceCandidate(iceCandidate: IceCandidate) {
         disposables +=
-            IceCandidatesRepository.getInstance()
-                .send(iceCandidate)
+            iceCandidatesRepository.send(iceCandidate)
                 .subscribe {
                     Timber.e("Ice candidate sent")
                 }
@@ -206,31 +215,61 @@ class RtcServiceController {
     // TODO: action에 따라서 분기 시켜야 함
     fun listenForOffer(currentUid: String) {
         Timber.e("Wating for offer...")
-        disposables += RtcOffersRepository.getInstance()
+        disposables += offersRepository
             .listenOffer(currentUid)
             .doOnNext {
+                Timber.e("Listening for ICE Candidates..(Callee)")
+                listenForIceCandidates(it.first)
                 startCallActivity(it.first)
             }.combineLatest( // TODO: need to implement on caller-logic
                 callHandler.callback.toFlowable(BackpressureStrategy.BUFFER)
             ).subscribe({
-                Timber.e("Listening for ICE Candidates..(Callee)")
-                listenForIceCandidates(it.first.first)
-                when (it.second.action) {
-                    CallEvent.CallAction.ACCEPT -> {
-                        setRemoteAnswerDescription(it.first.first, it.first.second)
-                        Timber.e("Remote description set")
-                    }
-                    CallEvent.CallAction.HANG_UP -> {
-                        // close connection
-                        rtcClient?.reset()
-                    }
-
-                }
-
+                //TODO: need to refactoring
+                handleCallEvent(it.first, it.second)
             }, {
                 // error
             })
     }
+
+    fun handleCallEvent(sdp: Pair<String, SessionDescription>, callEvent: CallEvent) {
+        when (callEvent.type) {
+            CallEvent.Type.STATE_CHANGED -> {
+                handleStateChanges(sdp, callEvent.iceConnectionState!!)
+            }
+            CallEvent.Type.ACTION -> {
+                handleCallAction(sdp, callEvent.action!!)
+            }
+        }
+    }
+
+    fun handleStateChanges(
+        sdp: Pair<String, SessionDescription>,
+        iceState: PeerConnection.IceConnectionState
+    ) = when (iceState) {
+        PeerConnection.IceConnectionState.CLOSED -> {
+
+        }
+        else -> {
+
+        }
+    }
+
+    fun handleCallAction(
+        sdp: Pair<String, SessionDescription>,
+        callAction: CallAction
+    ) = when (callAction) {
+        CallAction.ACCEPT -> {
+            setRemoteAnswerDescription(sdp.first, sdp.second)
+            Timber.e("Remote description set")
+        }
+        CallAction.HANG_UP -> {
+            resetRtcClient()
+        }
+        CallAction.READY -> {
+            setRemoteOfferDescription(sdp.first, sdp.second)
+        }
+    }
+
 
     fun setRemoteAnswerDescription(remoteUid: String, remoteDescription: SessionDescription) {
         rtcClient?.setRemoteDescription(object : SimpleSdpObserver() {
@@ -277,7 +316,7 @@ class RtcServiceController {
     }
 
     fun sendAnswer(remoteUid: String, localDescription: SessionDescription) {
-        disposables += RtcAnswersRepository.getInstance()
+        disposables += answersRepository
             .create(remoteUid, localDescription)
             .subscribe {
                 Timber.e("Answer sent to $remoteUid!!")
