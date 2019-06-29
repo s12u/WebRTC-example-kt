@@ -237,6 +237,7 @@ class RtcServiceController {
                 handleStateChanges(sdp, callEvent.iceConnectionState!!)
             }
             CallEvent.Type.ACTION -> {
+                Timber.e("Action ${callEvent.action} performed!")
                 handleCallAction(sdp, callEvent.action!!)
             }
         }
@@ -260,7 +261,6 @@ class RtcServiceController {
     ) = when (callAction) {
         CallAction.ACCEPT -> {
             setRemoteAnswerDescription(sdp.first, sdp.second)
-            Timber.e("Remote description set")
         }
         CallAction.HANG_UP -> {
             resetRtcClient()

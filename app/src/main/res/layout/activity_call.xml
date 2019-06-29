@@ -19,30 +19,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"/>
 
-
-        <ImageButton
-                android:id="@+id/button_answer_call"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_marginBottom="72dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:background="@drawable/bg_btn_round_call"
-                android:src="@drawable/ic_round_call_24px"/>
-
-        <ImageButton
-                android:id="@+id/button_hang_up"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_marginBottom="72dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:background="@drawable/bg_btn_round_call_end"
-                android:src="@drawable/ic_round_call_end_24px"
-                android:visibility="gone"/>
-
         <ImageButton
                 android:id="@+id/button_switch_camera"
                 android:layout_width="32dp"
@@ -54,6 +30,47 @@
                 android:background="@drawable/bg_btn_round_switch_camera"
                 android:src="@drawable/ic_round_switch_camera_24px"/>
 
+        <ImageButton
+                android:id="@+id/button_hang_up"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bg_btn_round_call_end"
+                android:src="@drawable/ic_round_call_end_24px"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:visibility="gone"
+                android:layout_marginBottom="72dp"/>
+
+
+        <!--TODO: need to separate caller / callee layout-->
+
+        <androidx.constraintlayout.motion.widget.MotionLayout
+                android:id="@+id/layout_motion_call"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layoutDescription="@xml/scene_call">
+
+            <ImageButton
+                    android:id="@+id/button_answer_call"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:background="@drawable/bg_btn_round_call"
+                    android:src="@drawable/ic_round_call_24px"/>
+
+            <ImageButton
+                    android:id="@+id/button_refuse_call"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:background="@drawable/bg_btn_round_call_end"
+                    android:src="@drawable/ic_round_call_end_24px"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"/>
+
+
+        </androidx.constraintlayout.motion.widget.MotionLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 
 </layout>

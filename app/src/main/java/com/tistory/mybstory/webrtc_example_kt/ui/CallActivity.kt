@@ -5,8 +5,8 @@ import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.telecom.Call
 import android.view.View
+import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.databinding.DataBindingUtil
 import com.tistory.mybstory.webrtc_example_kt.R
 import com.tistory.mybstory.webrtc_example_kt.service.CallHandler
@@ -20,7 +20,6 @@ import timber.log.Timber
 
 
 // TODO: need to make <Back button> disabled
-// TODO: need to implement "reject" function
 class CallActivity : Activity() {
 
     private var service: RtcService? = null
@@ -62,8 +61,9 @@ class CallActivity : Activity() {
             if (intent!!.getBooleanExtra("isCaller", false)) {
                 offerDevice(remoteUID)
                 callHandler.onActionPerformed(CallEvent.CallAction.READY)
-                binding.buttonAnswerCall.visibility = View.GONE
                 binding.buttonHangUp.visibility = View.VISIBLE
+                binding.buttonAnswerCall.visibility = View.GONE
+                binding.buttonRefuseCall.visibility = View.GONE
             }
         }
 
@@ -71,6 +71,9 @@ class CallActivity : Activity() {
             .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe {
                 when (it.iceConnectionState) {
                     PeerConnection.IceConnectionState.CHECKING -> {
+
+                    }
+                    PeerConnection.IceConnectionState.CONNECTED -> {
 
                     }
                     PeerConnection.IceConnectionState.CLOSED -> {
@@ -82,7 +85,9 @@ class CallActivity : Activity() {
                         // TODO: remove (offer/answer/ice candidates) from db
                     }
                     else -> {
+
                     }
+
                 }
             }
 
@@ -114,8 +119,15 @@ class CallActivity : Activity() {
             requestLayout()
         }
 
-        binding.buttonAnswerCall.setOnClickListener {
-            acceptCall()
+        binding.layoutMotionCall.setTransitionListener(transitionListener)
+
+//        binding.buttonAnswerCall.setOnClickListener {
+//            acceptCall()
+//            binding.buttonHangUp.visibility = View.VISIBLE
+//        }
+
+        binding.buttonRefuseCall.setOnClickListener {
+            hangUpCall() // TODO: add refusal action?
         }
 
         binding.buttonHangUp.setOnClickListener {
@@ -141,6 +153,28 @@ class CallActivity : Activity() {
 
     private fun switchCamera() {
         service?.switchCamera()
+    }
+
+    private val transitionListener = object: MotionLayout.TransitionListener {
+        override fun onTransitionTrigger(p0: MotionLayout?, p1: Int, p2: Boolean, p3: Float) {
+            Timber.e("onTransitionTrigger")
+        }
+
+        override fun onTransitionStarted(p0: MotionLayout?, p1: Int, p2: Int) {
+            Timber.e("onTransitionStarted")
+        }
+
+        override fun onTransitionChange(p0: MotionLayout?, p1: Int, p2: Int, p3: Float) {
+            Timber.e("onTransitionChange")
+        }
+
+        override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
+            if (currentId == R.id.end) {
+                acceptCall()
+                binding.buttonHangUp.visibility = View.VISIBLE
+            }
+
+        }
     }
 
 }

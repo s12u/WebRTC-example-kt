@@ -21,6 +21,7 @@ class RtcService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         serviceController.detachService()
+        stopSelf()
         super.onTaskRemoved(rootIntent)
     }
 

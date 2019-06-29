@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MotionScene xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:motion="http://schemas.android.com/apk/res-auto">
+
+    <Transition
+            motion:constraintSetStart="@+id/start"
+            motion:constraintSetEnd="@+id/end"
+            motion:motionInterpolator="linear"
+            motion:duration="400">
+        <OnClick
+                motion:clickAction="transitionToEnd"
+                motion:targetId="@id/button_answer_call"/>
+    </Transition>
+
+    <ConstraintSet android:id="@+id/start">
+        <Constraint android:id="@id/button_answer_call"
+                    motion:visibilityMode="ignore">
+            <Layout android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginStart="64dp"
+                    android:layout_marginBottom="72dp"
+                    motion:layout_constraintStart_toStartOf="parent"
+                    motion:layout_constraintBottom_toBottomOf="parent"/>
+        </Constraint>
+
+        <Constraint android:id="@id/button_refuse_call"
+                    motion:visibilityMode="ignore">
+            <Layout android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginEnd="64dp"
+                    android:layout_marginBottom="72dp"
+                    motion:layout_constraintEnd_toEndOf="parent"
+                    motion:layout_constraintBottom_toBottomOf="parent"/>
+        </Constraint>
+    </ConstraintSet>
+
+    <ConstraintSet android:id="@+id/end">
+        <Constraint android:id="@id/button_answer_call"
+                    android:alpha="0"
+                    motion:visibilityMode="ignore">
+            <Layout android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="72dp"
+                    motion:layout_constraintEnd_toEndOf="parent"
+                    motion:layout_constraintBottom_toBottomOf="parent"/>
+        </Constraint>
+
+        <Constraint android:id="@id/button_refuse_call"
+                    motion:visibilityMode="ignore"
+                    android:alpha="0">
+            <Layout android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginEnd="64dp"
+                    android:layout_marginBottom="72dp"
+                    motion:layout_constraintEnd_toEndOf="parent"
+                    motion:layout_constraintBottom_toBottomOf="parent"/>
+        </Constraint>
+    </ConstraintSet>
+</MotionScene>
