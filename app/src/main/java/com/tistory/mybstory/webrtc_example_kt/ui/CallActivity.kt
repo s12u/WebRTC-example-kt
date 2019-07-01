@@ -60,7 +60,6 @@ class CallActivity : Activity() {
 
             if (intent!!.getBooleanExtra("isCaller", false)) {
                 offerDevice(remoteUID)
-                callHandler.onActionPerformed(CallEvent.CallAction.READY)
                 binding.buttonHangUp.visibility = View.VISIBLE
                 binding.buttonAnswerCall.visibility = View.GONE
                 binding.buttonRefuseCall.visibility = View.GONE
@@ -157,23 +156,21 @@ class CallActivity : Activity() {
 
     private val transitionListener = object: MotionLayout.TransitionListener {
         override fun onTransitionTrigger(p0: MotionLayout?, p1: Int, p2: Boolean, p3: Float) {
-            Timber.e("onTransitionTrigger")
+//            Timber.e("onTransitionTrigger")
         }
 
         override fun onTransitionStarted(p0: MotionLayout?, p1: Int, p2: Int) {
-            Timber.e("onTransitionStarted")
+//            Timber.e("onTransitionStarted")
         }
 
         override fun onTransitionChange(p0: MotionLayout?, p1: Int, p2: Int, p3: Float) {
-            Timber.e("onTransitionChange")
+//            Timber.e("onTransitionChange")
         }
 
         override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
             if (currentId == R.id.end) {
                 acceptCall()
-                binding.buttonHangUp.visibility = View.VISIBLE
             }
-
         }
     }
 

@@ -68,6 +68,7 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
 
         val rtcConfiguration = PeerConnection.RTCConfiguration(iceServers)
         rtcConfiguration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
+        rtcConfiguration.enableDtlsSrtp = true
 
         val peerConnectionObserver = RtcPeerConnectionObserver(peerConnectionHandler, this)
         peerConnection = peerConnectionFactory.createPeerConnection(rtcConfiguration, peerConnectionObserver)

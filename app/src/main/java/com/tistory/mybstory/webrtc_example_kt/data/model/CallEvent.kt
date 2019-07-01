@@ -12,6 +12,6 @@ data class CallEvent (val type: Type, val iceConnectionState: PeerConnection.Ice
     }
 
     enum class CallAction {
-        ACCEPT, HANG_UP, READY
+        ACCEPT, HANG_UP
     }
 }

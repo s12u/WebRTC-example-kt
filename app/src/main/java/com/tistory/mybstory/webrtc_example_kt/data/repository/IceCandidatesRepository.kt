@@ -41,7 +41,7 @@ class IceCandidatesRepository private constructor() {
             .subscribeOn(Schedulers.io())
 
     fun remove(iceCandidates: Array<IceCandidate>) =
-        Completable.create {
+        Completable.create { emitter ->
             val iceCandidatesToRemove =
                 iceCandidates.map { FirestoreIceCandidate.fromIceCandidate(it) }
                     .toMutableList()
@@ -60,6 +60,7 @@ class IceCandidatesRepository private constructor() {
                 }
             }.addOnSuccessListener {
                 Timber.e("Transaction Success : Ice candidates removal")
+                emitter.onComplete()
             }
         }
 
