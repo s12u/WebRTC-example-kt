@@ -77,11 +77,9 @@ class CallActivity : Activity() {
                     }
                     PeerConnection.IceConnectionState.CLOSED -> {
                         hangUpCall()
-                        // TODO: remove (offer/answer/ice candidates) from db
                     }
                     PeerConnection.IceConnectionState.DISCONNECTED -> {
                         hangUpCall()
-                        // TODO: remove (offer/answer/ice candidates) from db
                     }
                     else -> {
 

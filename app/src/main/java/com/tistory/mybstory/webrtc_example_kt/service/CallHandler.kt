@@ -29,4 +29,7 @@ class CallHandler {
         callback.onNext(CallEvent(CallEvent.Type.ACTION, action))
     }
 
+    fun onError(error: Throwable) {
+        callback.onError(error)
+    }
 }

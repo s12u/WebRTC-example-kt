@@ -31,7 +31,6 @@ class IceCandidatesRepository private constructor() {
             it.onComplete()
         }
 
-
     fun get(remoteUid: String): Flowable<SyncEvent<FirestoreIceCandidate>> =
         firestore.collection(ICE_CANDIDATES_PATH)
             .document(remoteUid)
@@ -63,7 +62,6 @@ class IceCandidatesRepository private constructor() {
                 emitter.onComplete()
             }
         }
-
 
     companion object {
         private var instance: IceCandidatesRepository? = null

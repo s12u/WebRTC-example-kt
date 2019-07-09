@@ -37,6 +37,8 @@ class RtcServiceController {
 
     private var rtcService: RtcService? = null
 
+    //TODO: need to make callHandler for caller/callee
+
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
         rtcService = service
@@ -54,7 +56,8 @@ class RtcServiceController {
 
     fun resetRtcClient() {
         disposables.clear()
-        rtcClient?.reset()
+        rtcClient?.close()
+        rtcClient = null
         getIceServers()
     }
 
@@ -90,6 +93,7 @@ class RtcServiceController {
 
     //TODO: need to delete offer/answer/ice candidates/ at connection closed
 
+    //TODO: need to implement clear offer on disconnect (caller) & detect "disconnected" event
     fun offerDevice(remoteUid: String) {
         Timber.e("Listening for ICE Candidates...(Caller)")
         listenForIceCandidates(remoteUid)
@@ -114,7 +118,7 @@ class RtcServiceController {
     }
 
 
-    fun setLocalOfferDescription(localDescription: SessionDescription, remoteUid: String) {
+    fun setLocalOfferDescription(localDescription: SessionDescription, remoteUid: String) =
         rtcClient?.setLocalDescription(object : SimpleSdpObserver() {
             override fun onSetSuccess() {
                 Timber.e("Local description set!!, Sending offer!!")
@@ -126,7 +130,7 @@ class RtcServiceController {
                 Timber.e("failed to set Local offer description")
             }
         }, localDescription)
-    }
+
 
     fun sendOffer(remoteUid: String, localDescription: SessionDescription) {
         disposables += offersRepository.create(remoteUid, localDescription)
@@ -161,6 +165,7 @@ class RtcServiceController {
                 super.onSetSuccess()
                 Timber.e("Remote session description for offer set!!")
             }
+
             override fun onSetFailure(p0: String?) {
                 Timber.e("failed to set remote offer description")
                 super.onSetFailure(p0)
@@ -169,23 +174,22 @@ class RtcServiceController {
 
 
     fun listenForIceCandidates(remoteUid: String) {
-        disposables +=
-            iceCandidatesRepository.get(remoteUid)
-                .subscribe {
-                    when (it.type) {
-                        DocumentChange.Type.ADDED -> {
-                            rtcClient?.addIceCandidate(it.value.toIceCandidate())
-                            Timber.e("Ice candidate added!!")
-                        }
-                        DocumentChange.Type.REMOVED -> {
-                            rtcClient?.removeIceCandidates(arrayOf(it.value.toIceCandidate()))
-                            Timber.e("Ice candidate removed!!")
-                        }
-                        else -> {
-                            Timber.e("unknown type of operation")
-                        }
+        disposables += iceCandidatesRepository.get(remoteUid)
+            .subscribe {
+                when (it.type) {
+                    DocumentChange.Type.ADDED -> {
+                        rtcClient?.addIceCandidate(it.value.toIceCandidate())
+                        Timber.e("Ice candidate added!!")
+                    }
+                    DocumentChange.Type.REMOVED -> {
+                        rtcClient?.removeIceCandidates(arrayOf(it.value.toIceCandidate()))
+                        Timber.e("Ice candidate removed!!")
+                    }
+                    else -> {
+                        Timber.e("unknown type of operation")
                     }
                 }
+            }
     }
 
     fun sendIceCandidate(iceCandidate: IceCandidate) {
@@ -219,7 +223,7 @@ class RtcServiceController {
                 Timber.e("Offer received!!")
                 startCallActivity(it.first)
             }.combineLatest( // TODO: need to implement on caller-logic
-                callHandler.callback.toFlowable(BackpressureStrategy.BUFFER)
+                callHandler.callback.toFlowable(BackpressureStrategy.LATEST)
             ).subscribe({
                 //TODO: need to refactoring
                 Timber.e("Listening for ICE Candidates..(Callee)")
@@ -230,20 +234,21 @@ class RtcServiceController {
             })
     }
 
-    fun setRemoteAnswerDescription(remoteUid: String, remoteDescription: SessionDescription) {
+    fun setRemoteAnswerDescription(remoteUid: String, remoteDescription: SessionDescription) =
         rtcClient?.setRemoteDescription(object : SimpleSdpObserver() {
             override fun onSetSuccess() {
                 super.onSetSuccess()
                 Timber.e("Remote session description for answer set!!")
                 createAnswer(remoteUid)
             }
+
             override fun onSetFailure(p0: String?) {
                 super.onSetFailure(p0)
             }
         }, remoteDescription)
-    }
 
-    fun createAnswer(remoteUid: String) {
+
+    fun createAnswer(remoteUid: String) =
         rtcClient?.createAnswer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(p0: SessionDescription?) {
                 p0?.let {
@@ -257,9 +262,9 @@ class RtcServiceController {
                 Timber.e("failed to create Local description")
             }
         })
-    }
 
-    fun setLocalAnswerDescription(remoteUid: String, localDescription: SessionDescription) {
+
+    fun setLocalAnswerDescription(remoteUid: String, localDescription: SessionDescription) =
         rtcClient?.setLocalDescription(object : SimpleSdpObserver() {
             override fun onSetSuccess() {
                 Timber.e("Local description set!!, Send Answer!!")
@@ -271,7 +276,7 @@ class RtcServiceController {
                 super.onSetFailure(p0)
             }
         }, localDescription)
-    }
+
 
     fun sendAnswer(remoteUid: String, localDescription: SessionDescription) {
         disposables += answersRepository
@@ -296,13 +301,14 @@ class RtcServiceController {
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
             Timber.e("ICE Connection state changed : %s", iceConnectionState.name)
             callHandler.onConnectionStateChanged(iceConnectionState)
+            handleStateChanges(iceConnectionState)
         }
     }
 
     fun handleCallEvent(sdp: Pair<String, SessionDescription>, callEvent: CallEvent) {
         when (callEvent.type) {
             CallEvent.Type.STATE_CHANGED -> {
-                handleStateChanges(sdp, callEvent.iceConnectionState!!)
+
             }
             CallEvent.Type.ACTION -> {
                 Timber.e("Action ${callEvent.action} performed!")
@@ -312,29 +318,38 @@ class RtcServiceController {
     }
 
     fun handleStateChanges(
-        sdp: Pair<String, SessionDescription>,
-        iceState: PeerConnection.IceConnectionState
-    ) = when (iceState) {
-        PeerConnection.IceConnectionState.CLOSED -> {
+        iceConnectionState: PeerConnection.IceConnectionState
+    ) {
+        when (iceConnectionState) {
+            PeerConnection.IceConnectionState.DISCONNECTED,
+            PeerConnection.IceConnectionState.CLOSED-> {
+                removeOfferAndAnswer()
+            }
+            else -> {
 
-        }
-        else -> {
-
+            }
         }
     }
 
     fun handleCallAction(
-        sdp: Pair<String, SessionDescription>,
+        sdp: Pair<String, SessionDescription>? = null,
         callAction: CallAction
     ) = when (callAction) {
         CallAction.ACCEPT -> {
-            setRemoteAnswerDescription(sdp.first, sdp.second)
+            sdp?.let {
+                setRemoteAnswerDescription(sdp.first, sdp.second)
+            }
         }
         CallAction.HANG_UP -> {
             resetRtcClient()
+            removeOfferAndAnswer()
         }
     }
 
+    private fun removeOfferAndAnswer() {
+        offersRepository.removeOffer?.subscribe()
+        answersRepository.removeAnswer?.subscribe()
+    }
 
     private fun startCallActivity(remoteUid: String) {
         val bundle = Bundle()

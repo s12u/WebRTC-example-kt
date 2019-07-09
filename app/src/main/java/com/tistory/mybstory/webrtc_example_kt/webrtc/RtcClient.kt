@@ -4,6 +4,9 @@ import android.content.Context
 import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
 import com.tistory.mybstory.webrtc_example_kt.base.RemoteVideoHandler
 import com.tistory.mybstory.webrtc_example_kt.util.RtcUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.webrtc.*
 import org.webrtc.PeerConnection.IceServer
 import timber.log.Timber
@@ -88,19 +91,41 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
 
     // TODO : need to run on new thread
 
-    fun createOffer(sdpObserver: SimpleSdpObserver) = peerConnection?.createOffer(sdpObserver, mediaConstraints)
+    fun createOffer(sdpObserver: SimpleSdpObserver) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.createOffer(sdpObserver, mediaConstraints)
+        }
+    }
 
-    fun createAnswer(sdpObserver: SimpleSdpObserver) = peerConnection?.createAnswer(sdpObserver, mediaConstraints)
+    fun createAnswer(sdpObserver: SimpleSdpObserver) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.createAnswer(sdpObserver, mediaConstraints)
+        }
+    }
 
-    fun setLocalDescription(sdpObserver: SimpleSdpObserver, localDescription: SessionDescription) =
-        peerConnection?.setLocalDescription(sdpObserver, localDescription)
+    fun setLocalDescription(sdpObserver: SimpleSdpObserver, localDescription: SessionDescription) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.setLocalDescription(sdpObserver, localDescription)
+        }
+    }
 
-    fun setRemoteDescription(sdpObserver: SimpleSdpObserver, remoteDescription: SessionDescription) =
-        peerConnection?.setRemoteDescription(sdpObserver, remoteDescription)
+    fun setRemoteDescription(sdpObserver: SimpleSdpObserver, remoteDescription: SessionDescription) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.setRemoteDescription(sdpObserver, remoteDescription)
+        }
+    }
 
-    fun addIceCandidate(iceCandidate: IceCandidate) = peerConnection?.addIceCandidate(iceCandidate)
+    fun addIceCandidate(iceCandidate: IceCandidate) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.addIceCandidate(iceCandidate)
+        }
+    }
 
-    fun removeIceCandidates(iceCandidates: Array<IceCandidate>) = peerConnection?.removeIceCandidates(iceCandidates)
+    fun removeIceCandidates(iceCandidates: Array<IceCandidate>) {
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.removeIceCandidates(iceCandidates)
+        }
+    }
 
 
     fun attachLocalView(localSurfaceViewRenderer: SurfaceViewRenderer) {
@@ -146,27 +171,20 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         remoteSurfaceViewRenderer = null
     }
 
-    fun reset() {
-        Timber.e("RTC Client reset")
-        videoCapturer?.run {
-            stopCapture()
-            dispose()
-        }
-        detachViews()
-        peerConnection?.close()
-    }
-
     fun close() {
         detachViews()
-        peerConnection?.run {
-            dispose()
+        CoroutineScope(Dispatchers.IO).launch {
+            peerConnection?.run {
+                dispose()
+            }
+            videoCapturer?.dispose()
+            localAudioSource?.dispose()
+            localVideoSource?.dispose()
+            surfaceTextureHelper.dispose()
+            eglBase.release()
+            peerConnectionFactory.dispose()
         }
-        surfaceTextureHelper.dispose()
-        eglBase.release()
-        videoCapturer?.dispose()
-        localAudioSource?.dispose()
-        localVideoSource?.dispose()
-        peerConnectionFactory.dispose()
     }
+
 
 }
