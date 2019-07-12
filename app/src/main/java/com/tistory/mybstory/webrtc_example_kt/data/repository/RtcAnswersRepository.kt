@@ -5,6 +5,7 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tistory.mybstory.webrtc_example_kt.data.model.FirestoreSessionDescription
+import com.tistory.mybstory.webrtc_example_kt.data.model.SyncEvent
 import com.tistory.mybstory.webrtc_example_kt.service.AuthManager
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.snapshotEvents
 import io.reactivex.Completable
@@ -41,7 +42,7 @@ class RtcAnswersRepository private constructor() {
             }
     }
 
-    fun listenAnswer(): Flowable<Pair<String,SessionDescription>> =
+    fun listenAnswer(): Flowable<Pair<String, SessionDescription>> =
         firestore.collection(ANSWER_PATH)
             .document(AuthManager.getInstance().getUser()!!.uid)
             .snapshotEvents<FirestoreSessionDescription>()

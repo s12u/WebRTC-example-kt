@@ -7,6 +7,7 @@ import com.tistory.mybstory.webrtc_example_kt.data.model.FirestoreIceCandidate
 import com.tistory.mybstory.webrtc_example_kt.data.model.SyncEvent
 import com.tistory.mybstory.webrtc_example_kt.service.AuthManager
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.snapshotEvents
+import com.tistory.mybstory.webrtc_example_kt.util.extensions.snapshotEventsWithType
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.schedulers.Schedulers
@@ -35,7 +36,7 @@ class IceCandidatesRepository private constructor() {
         firestore.collection(ICE_CANDIDATES_PATH)
             .document(remoteUid)
             .collection(ICE_CANDIDATES_PATH)
-            .snapshotEvents<FirestoreIceCandidate>()
+            .snapshotEventsWithType<FirestoreIceCandidate>()
             .filter { it.type == DocumentChange.Type.ADDED || it.type == DocumentChange.Type.REMOVED }
             .subscribeOn(Schedulers.io())
 

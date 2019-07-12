@@ -64,7 +64,7 @@ class MainActivity : BaseActivity() {
 
     fun signIn() {
         CoroutineScope(Dispatchers.IO).launch {
-            val user = viewModel.signIn().await()?.user
+            viewModel.signIn().await()
             bindService()
         }
     }

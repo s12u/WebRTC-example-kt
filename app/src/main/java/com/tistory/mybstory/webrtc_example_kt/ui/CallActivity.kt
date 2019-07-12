@@ -78,7 +78,7 @@ class CallActivity : Activity() {
 
                         }
                         PeerConnection.IceConnectionState.CLOSED -> {
-                            //hangUpCall()
+                            hangUpCall()
                         }
                         PeerConnection.IceConnectionState.DISCONNECTED -> {
                             hangUpCall()

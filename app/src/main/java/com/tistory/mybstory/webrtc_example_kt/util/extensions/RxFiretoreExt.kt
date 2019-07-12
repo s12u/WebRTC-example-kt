@@ -4,19 +4,27 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.firestore.*
 import com.tistory.mybstory.webrtc_example_kt.data.model.SyncEvent
 import io.reactivex.*
+import timber.log.Timber
 
 inline fun <reified T : Any> DocumentReference.snapshotEvents(): Flowable<T> =
     Flowable.create({ emitter ->
+        var initialized = false
+
         val snapshotListener = EventListener<DocumentSnapshot> { documentSnapshot, e ->
-            documentSnapshot?.toObject(T::class.java)?.let {
-                //TODO : null 문제 수정해야 함
+
+            if (!documentSnapshot?.exists()!! && initialized) {
+                emitter.onComplete()
+            }
+
+            documentSnapshot.toObject(T::class.java)?.let {
                 emitter.onNext(it)
             }
+            initialized = true
         }
         addSnapshotListener(snapshotListener)
     }, BackpressureStrategy.BUFFER)
 
-inline fun <reified T : Any> CollectionReference.snapshotEvents(): Flowable<SyncEvent<T>> =
+inline fun <reified T : Any> CollectionReference.snapshotEventsWithType(): Flowable<SyncEvent<T>> =
     Flowable.create({ emitter ->
         val snapshotListener = EventListener<QuerySnapshot> { querySnapshot, e ->
             querySnapshot?.let {

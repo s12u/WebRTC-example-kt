@@ -57,11 +57,14 @@ class RtcServiceController {
     }
 
     fun resetRtcClient() {
-        closeRtcClient()
-        getIceServers()
+        removeOfferAndAnswer()
+        closeRtcClient().invokeOnCompletion {
+            getIceServers()
+        }
+
     }
 
-    fun closeRtcClient() {
+    fun closeRtcClient() =
         CoroutineScope(Dispatchers.IO).launch {
             if (rtcClient != null) {
                 disposables.clear()
@@ -70,7 +73,6 @@ class RtcServiceController {
             }
         }
 
-    }
 
     fun getIceServers() {
         Timber.e("Ice servers loading...")
@@ -151,6 +153,13 @@ class RtcServiceController {
                     // success
                     Timber.e("Offer sent!!, listening for answer!!")
                     listenForAnswer()
+
+                    //
+                    disposables += offersRepository.listenOffer(remoteUid)
+                        .doOnComplete {
+                            Timber.e("Offer refused....")
+                            resetRtcClient()
+                        }.subscribe()
                 },
                 {
                     if (it is TimeoutException) {
@@ -165,11 +174,11 @@ class RtcServiceController {
         disposables += answersRepository
             .listenAnswer()
             .doOnNext {
-                Timber.e("Answer received !! ")
-                callHandler.onActionPerformed(CallEvent.CallAction.READY)
+                callHandler.onActionPerformed(CallAction.READY) // called once at first
             }
             .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.LATEST))
             .subscribe {
+                Timber.e("Answer received !! ")
                 handleCallEvent(it.first, it.second)
             }
     }
@@ -338,7 +347,6 @@ class RtcServiceController {
             PeerConnection.IceConnectionState.CLOSED,
             PeerConnection.IceConnectionState.DISCONNECTED,
             PeerConnection.IceConnectionState.FAILED -> {
-                removeOfferAndAnswer()
                 //resetRtcClient()
             }
 

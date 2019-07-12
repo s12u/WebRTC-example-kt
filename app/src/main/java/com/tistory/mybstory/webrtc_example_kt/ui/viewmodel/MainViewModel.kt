@@ -32,7 +32,7 @@ class MainViewModel : ViewModel() {
         super.onCleared()
     }
 
-    suspend fun signIn() = AuthManager.getInstance()
+    fun signIn() = AuthManager.getInstance()
             .signIn(onCompleteListener)
 
     fun observeUser(): LiveData<FirebaseUser> = userLiveData
