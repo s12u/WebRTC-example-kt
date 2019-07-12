@@ -17,6 +17,9 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.combineLatest
 import io.reactivex.rxkotlin.plusAssign
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnection
 import org.webrtc.SessionDescription
@@ -41,6 +44,7 @@ class RtcServiceController {
 
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
+        callHandler.create()
         rtcService = service
         getIceServers()
     }
@@ -48,17 +52,24 @@ class RtcServiceController {
     fun detachService() {
         Timber.e("Service detached!!")
         callHandler.dispose()
-        disposables.clear()
-        rtcClient?.close()
-        rtcClient = null
+        closeRtcClient()
         rtcService = null
     }
 
     fun resetRtcClient() {
-        disposables.clear()
-        rtcClient?.close()
-        rtcClient = null
+        closeRtcClient()
         getIceServers()
+    }
+
+    fun closeRtcClient() {
+        CoroutineScope(Dispatchers.IO).launch {
+            if (rtcClient != null) {
+                disposables.clear()
+                rtcClient?.close()
+                rtcClient = null
+            }
+        }
+
     }
 
     fun getIceServers() {
@@ -153,9 +164,13 @@ class RtcServiceController {
     fun listenForAnswer() {
         disposables += answersRepository
             .listenAnswer()
-            .subscribe {
+            .doOnNext {
                 Timber.e("Answer received !! ")
-                setRemoteOfferDescription(it)
+                callHandler.onActionPerformed(CallEvent.CallAction.READY)
+            }
+            .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.LATEST))
+            .subscribe {
+                handleCallEvent(it.first, it.second)
             }
     }
 
@@ -227,7 +242,6 @@ class RtcServiceController {
             ).subscribe({
                 //TODO: need to refactoring
                 Timber.e("Listening for ICE Candidates..(Callee)")
-                listenForIceCandidates(it.first.first)
                 handleCallEvent(it.first, it.second)
             }, {
                 // error
@@ -321,10 +335,13 @@ class RtcServiceController {
         iceConnectionState: PeerConnection.IceConnectionState
     ) {
         when (iceConnectionState) {
+            PeerConnection.IceConnectionState.CLOSED,
             PeerConnection.IceConnectionState.DISCONNECTED,
-            PeerConnection.IceConnectionState.CLOSED-> {
+            PeerConnection.IceConnectionState.FAILED -> {
                 removeOfferAndAnswer()
+                //resetRtcClient()
             }
+
             else -> {
 
             }
@@ -335,14 +352,18 @@ class RtcServiceController {
         sdp: Pair<String, SessionDescription>? = null,
         callAction: CallAction
     ) = when (callAction) {
+        CallAction.READY -> {
+            setRemoteOfferDescription(sdp!!.second)
+        }
         CallAction.ACCEPT -> {
-            sdp?.let {
-                setRemoteAnswerDescription(sdp.first, sdp.second)
-            }
+            listenForIceCandidates(sdp!!.first)
+            setRemoteAnswerDescription(sdp.first, sdp.second)
         }
         CallAction.HANG_UP -> {
             resetRtcClient()
-            removeOfferAndAnswer()
+        }
+        CallAction.REFUSE -> {
+            resetRtcClient()
         }
     }
 

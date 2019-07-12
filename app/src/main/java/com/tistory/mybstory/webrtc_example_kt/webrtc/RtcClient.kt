@@ -14,10 +14,10 @@ import timber.log.Timber
 class RtcClient constructor(context: Context) : RemoteVideoHandler {
 
     private val eglBase = EglBase.create()
-    private var peerConnectionFactory: PeerConnectionFactory
+    private var peerConnectionFactory: PeerConnectionFactory? = null
+    private var surfaceTextureHelper: SurfaceTextureHelper? = null
     private var peerConnection: PeerConnection? = null
-    private var surfaceTextureHelper: SurfaceTextureHelper
-    private var videoCapturer: CameraVideoCapturer?
+    private var videoCapturer: CameraVideoCapturer? = null
 
     private var localVideoSource: VideoSource? = null
     private var localVideoTrack: VideoTrack? = null
@@ -34,6 +34,8 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
         mandatory.add(MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"))
     }
+
+    private var isInitialized = false
 
     init {
         Timber.e("RtcClient instance created!!")
@@ -54,13 +56,15 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         videoCapturer = RtcUtil.createVideoCapturer(context)
 
         videoCapturer?.let {
-            localVideoSource = peerConnectionFactory.createVideoSource(false)
-            localVideoTrack = peerConnectionFactory.createVideoTrack("ARDAMSv0", localVideoSource)
+            localVideoSource = peerConnectionFactory?.createVideoSource(false)
+            localVideoTrack = peerConnectionFactory?.createVideoTrack("ARDAMSv0", localVideoSource)
             it.initialize(surfaceTextureHelper, context, localVideoSource!!.capturerObserver)
         }
 
-        localAudioSource = peerConnectionFactory.createAudioSource(mediaConstraints)
-        localAudioTrack = peerConnectionFactory.createAudioTrack("ARDAMSa0", localAudioSource)
+        localAudioSource = peerConnectionFactory?.createAudioSource(mediaConstraints)
+        localAudioTrack = peerConnectionFactory?.createAudioTrack("ARDAMSa0", localAudioSource)
+
+        isInitialized = true
 
     }
 
@@ -68,17 +72,16 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         iceServers: List<IceServer>,
         peerConnectionHandler: PeerConnectionHandler
     ) {
-
         val rtcConfiguration = PeerConnection.RTCConfiguration(iceServers)
         rtcConfiguration.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
         rtcConfiguration.enableDtlsSrtp = true
 
-        val peerConnectionObserver = RtcPeerConnectionObserver(peerConnectionHandler, this)
-        peerConnection = peerConnectionFactory.createPeerConnection(rtcConfiguration, peerConnectionObserver)
+        val peerConnectionObserver = RtcPeerConnectionObserver(peerConnectionHandler, this@RtcClient)
+        peerConnection = peerConnectionFactory?.createPeerConnection(rtcConfiguration, peerConnectionObserver)
 
-        val localMediaStream = peerConnectionFactory.createLocalMediaStream("ARDAMS")
+        val localMediaStream = peerConnectionFactory?.createLocalMediaStream("ARDAMS")
 
-        localMediaStream.apply {
+        localMediaStream?.apply {
             localAudioTrack?.let {
                 addTrack(it)
             }
@@ -130,26 +133,31 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
 
     fun attachLocalView(localSurfaceViewRenderer: SurfaceViewRenderer) {
         localSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
-        this.localSurfaceViewRenderer = localSurfaceViewRenderer
+        this@RtcClient.localSurfaceViewRenderer = localSurfaceViewRenderer
         localVideoTrack?.addSink(this@RtcClient.localSurfaceViewRenderer)
         videoCapturer?.let { enableVideo(true, it) }
+
     }
 
     fun attachRemoteView(remoteSurfaceViewRenderer: SurfaceViewRenderer) {
         remoteSurfaceViewRenderer.init(eglBase.eglBaseContext, null)
-        this.remoteSurfaceViewRenderer = remoteSurfaceViewRenderer
-        remoteVideoTrack?.addSink(this@RtcClient.remoteSurfaceViewRenderer)
+        this@RtcClient.remoteSurfaceViewRenderer = remoteSurfaceViewRenderer
+        //remoteVideoTrack?.addSink(this@RtcClient.remoteSurfaceViewRenderer)
     }
 
     override fun onAddRemoteStream(remoteVideoTrack: VideoTrack) {
-        this.remoteVideoTrack = remoteVideoTrack
-        remoteSurfaceViewRenderer?.let {
-            remoteVideoTrack.addSink(it)
+        CoroutineScope(Dispatchers.IO).launch {
+            this@RtcClient.remoteVideoTrack = remoteVideoTrack
+            remoteSurfaceViewRenderer?.let {
+                remoteVideoTrack.addSink(it)
+            }
         }
     }
 
     override fun removeVideoStream() {
-        this.remoteVideoTrack = null
+        remoteVideoTrack?.removeSink(remoteSurfaceViewRenderer)
+        remoteVideoTrack?.dispose()
+        remoteVideoTrack = null
     }
 
     private fun enableVideo(isEnabled: Boolean, videoCapturer: VideoCapturer) {
@@ -165,26 +173,25 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         videoCapturer?.switchCamera(cameraSwitchHandler)
 
     fun detachViews() {
-        localSurfaceViewRenderer?.release()
-        remoteSurfaceViewRenderer?.release()
         localSurfaceViewRenderer = null
         remoteSurfaceViewRenderer = null
     }
 
     fun close() {
-        detachViews()
         CoroutineScope(Dispatchers.IO).launch {
-            peerConnection?.run {
-                dispose()
+            if (isInitialized) {
+                detachViews()
+                peerConnection?.run {
+                    dispose()
+                }
+                videoCapturer?.stopCapture()
+                videoCapturer?.dispose()
+                surfaceTextureHelper?.stopListening()
+                surfaceTextureHelper?.dispose()
+                localAudioSource?.dispose()
+                localVideoSource?.dispose()
+                peerConnectionFactory?.dispose()
             }
-            videoCapturer?.dispose()
-            localAudioSource?.dispose()
-            localVideoSource?.dispose()
-            surfaceTextureHelper.dispose()
-            eglBase.release()
-            peerConnectionFactory.dispose()
         }
     }
-
-
 }

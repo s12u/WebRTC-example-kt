@@ -56,7 +56,8 @@ class CallActivity : Activity() {
         service.run {
             this@CallActivity.service = service
             attachLocalView(binding.localRenderer)
-            attachRemoteView(binding.remoteRenderer)
+            service.attachRemoteView(binding.remoteRenderer)
+//            attachRemoteView(binding.remoteRenderer)
 
             if (intent!!.getBooleanExtra("isCaller", false)) {
                 offerDevice(remoteUID)
@@ -67,26 +68,30 @@ class CallActivity : Activity() {
         }
 
         callStateDisposable = callHandler.callback
-            .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe {
-                when (it.iceConnectionState) {
-                    PeerConnection.IceConnectionState.CHECKING -> {
+            .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe (
+                {
+                    when (it.iceConnectionState) {
+                        PeerConnection.IceConnectionState.CHECKING -> {
+
+                        }
+                        PeerConnection.IceConnectionState.CONNECTED -> {
+
+                        }
+                        PeerConnection.IceConnectionState.CLOSED -> {
+                            //hangUpCall()
+                        }
+                        PeerConnection.IceConnectionState.DISCONNECTED -> {
+                            hangUpCall()
+                        }
+                        else -> {
+
+                        }
 
                     }
-                    PeerConnection.IceConnectionState.CONNECTED -> {
-
-                    }
-                    PeerConnection.IceConnectionState.CLOSED -> {
-                        hangUpCall()
-                    }
-                    PeerConnection.IceConnectionState.DISCONNECTED -> {
-                        hangUpCall()
-                    }
-                    else -> {
-
-                    }
+                }, {
 
                 }
-            }
+            )
 
     }
 
@@ -124,7 +129,7 @@ class CallActivity : Activity() {
 //        }
 
         binding.buttonRefuseCall.setOnClickListener {
-            hangUpCall() // TODO: add refusal action?
+            refuseCall()
         }
 
         binding.buttonHangUp.setOnClickListener {
@@ -143,14 +148,28 @@ class CallActivity : Activity() {
         binding.buttonHangUp.visibility = View.VISIBLE
     }
 
+    private fun refuseCall() {
+        callHandler.onActionPerformed(CallEvent.CallAction.REFUSE)
+        releaseSurfaceRenderer()
+        finish()
+    }
+
     private fun hangUpCall() {
         callHandler.onActionPerformed(CallEvent.CallAction.HANG_UP)
+        releaseSurfaceRenderer()
         finish()
     }
 
     private fun switchCamera() {
         service?.switchCamera()
     }
+
+    private fun releaseSurfaceRenderer() {
+        binding.localRenderer.release()
+        binding.remoteRenderer.release()
+    }
+
+    // motionlayout transition listener
 
     private val transitionListener = object: MotionLayout.TransitionListener {
         override fun onTransitionTrigger(p0: MotionLayout?, p1: Int, p2: Boolean, p3: Float) {

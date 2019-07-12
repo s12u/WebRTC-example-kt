@@ -30,13 +30,13 @@ class RtcOffersRepository private constructor() {
             .map { Pair(it.senderId, it.toSessionDescription()) }
             .subscribeOn(Schedulers.io())
 
-    private fun removeSelf(recipientId: String) = Completable.create { emitter ->
+    private fun removeSelf(recipientId: String): Completable = Completable.create { emitter ->
         firestore.collection(OFFER_PATH)
             .document(recipientId)
             .delete()
             .addOnCompleteListener {task ->
                 if (task.isSuccessful) {
-                    removeOffer = null
+                    removeOffer = removeSelf(recipientId)
                     emitter.onComplete()
                 }
                 task.exception?.let { e ->
@@ -45,7 +45,7 @@ class RtcOffersRepository private constructor() {
             }
     }
 
-    var removeOffer: Completable? = null
+    var removeOffer: Completable? = removeSelf(AuthManager.getInstance().getUser()!!.uid)
 
     companion object {
         private var instance: RtcOffersRepository? = null

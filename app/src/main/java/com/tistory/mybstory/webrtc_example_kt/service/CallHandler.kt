@@ -19,6 +19,8 @@ class CallHandler {
         }
     }
 
+    fun create() { callback  = PublishSubject.create()}
+
     fun dispose() = callback.onComplete()
 
     fun onConnectionStateChanged(state: IceConnectionState) {

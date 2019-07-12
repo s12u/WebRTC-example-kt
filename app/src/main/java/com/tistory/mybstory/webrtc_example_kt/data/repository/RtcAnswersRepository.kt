@@ -26,13 +26,13 @@ class RtcAnswersRepository private constructor() {
         it.onComplete()
     }
 
-    private fun removeSelf(recipientId: String) = Completable.create { emitter ->
+    private fun removeSelf(recipientId: String): Completable = Completable.create { emitter ->
         firestore.collection(ANSWER_PATH)
             .document(recipientId)
             .delete()
             .addOnCompleteListener {
                 if (it.isSuccessful) {
-                    removeAnswer = null
+                    removeAnswer = removeSelf(recipientId)
                     emitter.onComplete()
                 }
                 it.exception?.let { e ->
@@ -41,15 +41,15 @@ class RtcAnswersRepository private constructor() {
             }
     }
 
-    fun listenAnswer(): Flowable<SessionDescription> =
+    fun listenAnswer(): Flowable<Pair<String,SessionDescription>> =
         firestore.collection(ANSWER_PATH)
             .document(AuthManager.getInstance().getUser()!!.uid)
             .snapshotEvents<FirestoreSessionDescription>()
-            .map { it.toSessionDescription() }
+            .map { Pair(it.senderId, it.toSessionDescription()) }
             .subscribeOn(Schedulers.io())
 
 
-    var removeAnswer: Completable? = null
+    var removeAnswer: Completable? = removeSelf(AuthManager.getInstance().getUser()!!.uid)
 
     companion object {
         private var instance: RtcAnswersRepository? = null
