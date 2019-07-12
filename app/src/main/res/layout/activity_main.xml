@@ -10,29 +10,52 @@
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:padding="18dp"
             tools:context=".ui.MainActivity">
+
+        <TextView
+                android:id="@+id/label_uid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:text="My UID:"/>
 
         <TextView android:id="@+id/tv_uid"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  app:layout_constraintTop_toTopOf="parent"
-                  app:layout_constraintStart_toStartOf="parent"
-                  app:layout_constraintEnd_toEndOf="parent"/>
+                  android:layout_marginStart="8dp"
+                  app:layout_constraintStart_toEndOf="@id/label_uid"
+                  app:layout_constraintBaseline_toBaselineOf="@id/label_uid"
+                  android:layout_marginBottom="100dp"/>
 
-        <EditText android:id="@+id/et_target"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  app:layout_constraintTop_toTopOf="parent"
-                  app:layout_constraintBottom_toBottomOf="parent"
-                  app:layout_constraintStart_toStartOf="parent"
-                  app:layout_constraintEnd_toEndOf="parent"/>
+        <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_target"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/tv_uid"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:errorEnabled="true">
+
+            <EditText android:id="@+id/et_target"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:maxLines="1"
+                      android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
 
         <Button android:id="@+id/btn_start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:layout_constraintTop_toBottomOf="@id/et_target"
+                android:text="CALL"
+                app:layout_constraintTop_toBottomOf="@id/til_target"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintEnd_toEndOf="parent"
+                android:enabled="false"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -1,11 +1,7 @@
 package com.tistory.mybstory.webrtc_example_kt.data.repository
 
-import com.google.android.gms.common.api.Result
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tistory.mybstory.webrtc_example_kt.data.model.FirestoreSessionDescription
-import com.tistory.mybstory.webrtc_example_kt.data.model.SyncEvent
 import com.tistory.mybstory.webrtc_example_kt.service.AuthManager
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.snapshotEvents
 import io.reactivex.Completable
@@ -23,7 +19,7 @@ class RtcAnswersRepository private constructor() {
             .document(recipientId)
             .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription)
                 .apply { senderId = AuthManager.getInstance().getUser()!!.uid })
-            removeAnswer = removeSelf(recipientId) // remove created answer later
+        removeAnswer = removeSelf(recipientId) // remove created answer later -> TODO: considering db rules
         it.onComplete()
     }
 
@@ -31,12 +27,12 @@ class RtcAnswersRepository private constructor() {
         firestore.collection(ANSWER_PATH)
             .document(recipientId)
             .delete()
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
                     removeAnswer = removeSelf(recipientId)
                     emitter.onComplete()
                 }
-                it.exception?.let { e ->
+                task.exception?.let { e ->
                     emitter.onError(e)
                 }
             }

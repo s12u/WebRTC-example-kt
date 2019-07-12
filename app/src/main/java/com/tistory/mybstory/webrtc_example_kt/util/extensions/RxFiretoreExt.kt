@@ -13,6 +13,7 @@ inline fun <reified T : Any> DocumentReference.snapshotEvents(): Flowable<T> =
         val snapshotListener = EventListener<DocumentSnapshot> { documentSnapshot, e ->
 
             if (!documentSnapshot?.exists()!! && initialized) {
+                Timber.e("Document deleted!!")
                 emitter.onComplete()
             }
 

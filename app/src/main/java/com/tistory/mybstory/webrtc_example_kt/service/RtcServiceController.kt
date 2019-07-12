@@ -176,11 +176,22 @@ class RtcServiceController {
             .doOnNext {
                 callHandler.onActionPerformed(CallAction.READY) // called once at first
             }
-            .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.LATEST))
-            .subscribe {
-                Timber.e("Answer received !! ")
-                handleCallEvent(it.first, it.second)
-            }
+            .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.LATEST)
+                .doOnNext{
+                    handleCallEvent(null, it)
+                }
+                .filter { it.action == CallAction.READY }
+            )
+            .subscribe(
+                {
+                    Timber.e("Answer received !! ")
+                    handleCallEvent(it.first, it.second)
+                }, {
+                   // error
+                    it.printStackTrace()
+                }
+
+            )
     }
 
     fun setRemoteOfferDescription(remoteDescription: SessionDescription) =
@@ -246,7 +257,12 @@ class RtcServiceController {
             .doOnNext {
                 Timber.e("Offer received!!")
                 startCallActivity(it.first)
-            }.combineLatest( // TODO: need to implement on caller-logic
+            }
+            .doOnComplete {
+                Timber.e("Offer cancelled....")
+                resetRtcClient()
+            }
+            .combineLatest( // TODO: need to implement on caller-logic
                 callHandler.callback.toFlowable(BackpressureStrategy.LATEST)
             ).subscribe({
                 //TODO: need to refactoring
@@ -254,6 +270,7 @@ class RtcServiceController {
                 handleCallEvent(it.first, it.second)
             }, {
                 // error
+
             })
     }
 
@@ -328,7 +345,7 @@ class RtcServiceController {
         }
     }
 
-    fun handleCallEvent(sdp: Pair<String, SessionDescription>, callEvent: CallEvent) {
+    fun handleCallEvent(sdp: Pair<String, SessionDescription>?, callEvent: CallEvent) {
         when (callEvent.type) {
             CallEvent.Type.STATE_CHANGED -> {
 
@@ -361,7 +378,9 @@ class RtcServiceController {
         callAction: CallAction
     ) = when (callAction) {
         CallAction.READY -> {
-            setRemoteOfferDescription(sdp!!.second)
+            sdp?.second?.let {
+                setRemoteOfferDescription(it)
+            }
         }
         CallAction.ACCEPT -> {
             listenForIceCandidates(sdp!!.first)

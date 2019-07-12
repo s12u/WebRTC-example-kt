@@ -19,7 +19,7 @@ class RtcOffersRepository private constructor() {
             .document(recipientId)
             .set(FirestoreSessionDescription.fromSessionDescription(localSessionDescription)
                 .apply { senderId = AuthManager.getInstance().getUser()!!.uid })
-        removeOffer = removeSelf(recipientId) // remove created answer later
+        removeOffer = removeSelf(recipientId) // remove created offer later -> TODO: considering db rules
         it.onComplete()
     }
 
@@ -34,7 +34,7 @@ class RtcOffersRepository private constructor() {
         firestore.collection(OFFER_PATH)
             .document(recipientId)
             .delete()
-            .addOnCompleteListener {task ->
+            .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     removeOffer = removeSelf(recipientId)
                     emitter.onComplete()

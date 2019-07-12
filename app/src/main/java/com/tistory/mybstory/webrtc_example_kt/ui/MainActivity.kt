@@ -1,16 +1,14 @@
 package com.tistory.mybstory.webrtc_example_kt.ui
 
 import android.app.Activity
-import android.content.ComponentName
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.IBinder
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import com.jakewharton.rxbinding3.widget.textChangeEvents
 import com.tistory.mybstory.webrtc_example_kt.R
 import com.tistory.mybstory.webrtc_example_kt.base.BaseActivity
 import com.tistory.mybstory.webrtc_example_kt.databinding.ActivityMainBinding
@@ -18,10 +16,14 @@ import com.tistory.mybstory.webrtc_example_kt.service.RtcService
 import com.tistory.mybstory.webrtc_example_kt.ui.viewmodel.MainViewModel
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.await
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.launchActivity
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.plusAssign
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class MainActivity : BaseActivity() {
 
@@ -31,9 +33,9 @@ class MainActivity : BaseActivity() {
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA"
     )
-
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
+    private val disposables = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +62,19 @@ class MainActivity : BaseActivity() {
             Timber.d("Remote uid on Main: %s", binding.etTarget.text.toString())
             launchActivity<CallActivity>(bundle)
         }
+
+        disposables += et_target.textChangeEvents().skipInitialValue()
+            .subscribe {
+                if (it.count == 0) {
+                    til_target.error = "Enter remote id!"
+                    btn_start.isEnabled = false
+                }
+                else {
+                    til_target.error = ""
+                    btn_start.isEnabled = true
+                }
+            }
+
     }
 
     fun signIn() {
@@ -87,6 +102,11 @@ class MainActivity : BaseActivity() {
                 return
             }
         }
+    }
+
+    override fun onDestroy() {
+        disposables.clear()
+        super.onDestroy()
     }
 
 }
