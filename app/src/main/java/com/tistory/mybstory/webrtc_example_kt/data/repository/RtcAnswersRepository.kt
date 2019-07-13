@@ -42,7 +42,7 @@ class RtcAnswersRepository private constructor() {
         firestore.collection(ANSWER_PATH)
             .document(AuthManager.getInstance().getUser()!!.uid)
             .snapshotEvents<FirestoreSessionDescription>()
-            .map { Pair(it.senderId, it.toSessionDescription()) }
+            .map { it.senderId to it.toSessionDescription() }
             .subscribeOn(Schedulers.io())
 
 

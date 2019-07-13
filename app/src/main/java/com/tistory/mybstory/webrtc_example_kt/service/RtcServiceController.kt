@@ -2,6 +2,7 @@ package com.tistory.mybstory.webrtc_example_kt.service
 
 import android.os.Bundle
 import com.google.firebase.firestore.DocumentChange
+import com.tistory.mybstory.webrtc_example_kt.base.Exceptions
 import com.tistory.mybstory.webrtc_example_kt.base.PeerConnectionHandler
 import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent
 import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent.CallAction
@@ -155,10 +156,12 @@ class RtcServiceController {
                             resetRtcClient()
                         }.subscribe()
                 },
-                {
-                    if (it is TimeoutException) {
+                {exeption ->
+                    if (exeption is TimeoutException) {
                         //TODO: timeout.....remove offer from db
                         //callHandler.onActionPerformed(CallAction.HANG_UP)
+                    } else if (exeption is Exceptions.PeerIsBusyException) {
+
                     }
                     // error
                 })

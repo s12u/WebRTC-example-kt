@@ -81,7 +81,7 @@ class MainActivity : BaseActivity() {
         disposables += et_target.textChangeEvents().skipInitialValue()
             .subscribe {
                 if (it.count == 0) {
-                    til_target.error = "Enter remote id!"
+                    til_target.error = getString(R.string.error_empty_target)
                     btn_start.isEnabled = false
                 } else {
                     til_target.error = ""

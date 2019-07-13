@@ -6,12 +6,13 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.view.View
+import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.databinding.DataBindingUtil
 import com.tistory.mybstory.webrtc_example_kt.R
-import com.tistory.mybstory.webrtc_example_kt.service.CallHandler
 import com.tistory.mybstory.webrtc_example_kt.data.model.CallEvent
 import com.tistory.mybstory.webrtc_example_kt.databinding.ActivityCallBinding
+import com.tistory.mybstory.webrtc_example_kt.service.CallHandler
 import com.tistory.mybstory.webrtc_example_kt.service.RtcService
 import io.reactivex.disposables.Disposable
 import org.webrtc.PeerConnection
@@ -57,7 +58,6 @@ class CallActivity : Activity() {
             this@CallActivity.service = service
             attachLocalView(binding.localRenderer)
             service.attachRemoteView(binding.remoteRenderer)
-//            attachRemoteView(binding.remoteRenderer)
 
             if (intent!!.getBooleanExtra("isCaller", false)) {
                 offerDevice(remoteUID)
@@ -68,12 +68,9 @@ class CallActivity : Activity() {
         }
 
         callStateDisposable = callHandler.callback
-            .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe (
+            .filter { it.type == CallEvent.Type.STATE_CHANGED }.subscribe(
                 {
                     when (it.iceConnectionState) {
-                        PeerConnection.IceConnectionState.CHECKING -> {
-
-                        }
                         PeerConnection.IceConnectionState.CONNECTED -> {
 
                         }
@@ -82,6 +79,9 @@ class CallActivity : Activity() {
                         }
                         PeerConnection.IceConnectionState.DISCONNECTED -> {
                             hangUpCall()
+                        }
+                        PeerConnection.IceConnectionState.FAILED -> {
+                            showAlertDialog()
                         }
                         else -> {
 
@@ -92,7 +92,6 @@ class CallActivity : Activity() {
 
                 }
             )
-
     }
 
     override fun onStart() {
@@ -122,11 +121,6 @@ class CallActivity : Activity() {
         }
 
         binding.layoutMotionCall.setTransitionListener(transitionListener)
-
-//        binding.buttonAnswerCall.setOnClickListener {
-//            acceptCall()
-//            binding.buttonHangUp.visibility = View.VISIBLE
-//        }
 
         binding.buttonRefuseCall.setOnClickListener {
             refuseCall()
@@ -168,9 +162,17 @@ class CallActivity : Activity() {
         binding.remoteRenderer.release()
     }
 
-    // motionlayout transition listener
+    private fun showAlertDialog() =
+        AlertDialog.Builder(this)
+            .setTitle(R.string.alert)
+            .setMessage(R.string.error_failed_to_connect)
+            .setPositiveButton(R.string.ok) { dialog, _ -> dialog.dismiss() }
+            .setOnDismissListener { hangUpCall() }
+            .show()
 
-    private val transitionListener = object: MotionLayout.TransitionListener {
+
+    // motionlayout transition listener
+    private val transitionListener = object : MotionLayout.TransitionListener {
         override fun onTransitionTrigger(p0: MotionLayout?, p1: Int, p2: Boolean, p3: Float) {
 //            Timber.e("onTransitionTrigger")
         }

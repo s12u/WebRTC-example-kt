@@ -1,4 +1,17 @@
 <resources>
     <string name="app_name">WebRTC-example-kt</string>
+
+
+    <!-- error -->
+
+    <string name="error_empty_target">Enter the target UID!</string>
+    <string name="error_failed_to_connect">Connection failed</string>
+
+    <!-- others -->
     <string name="share_to">Share to</string>
+    <string name="alert">Alert</string>
+    <string name="my_uid">My Firebase UID:</string>
+    <string name="target_uid">TARGET UID</string>
+    <string name="call">CALL</string>
+    <string name="ok">OK</string>
 </resources>

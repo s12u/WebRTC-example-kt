@@ -14,22 +14,25 @@
             android:padding="18dp"
             tools:context=".ui.MainActivity">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/label_uid"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                android:text="My Firebase UID:"/>
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                android:text="@string/my_uid"/>
 
-        <TextView android:id="@+id/tv_uid"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginStart="8dp"
-                  app:layout_constraintStart_toEndOf="@id/label_uid"
-                  app:layout_constraintBaseline_toBaselineOf="@id/label_uid"
-                  android:layout_marginBottom="100dp"/>
+        <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_uid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                app:layout_constraintStart_toEndOf="@id/label_uid"
+                app:layout_constraintBaseline_toBaselineOf="@id/label_uid"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                android:layout_marginBottom="100dp"/>
 
         <ImageView android:id="@+id/iv_share"
                    android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -47,6 +50,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="64dp"
                 app:errorEnabled="true"
+                android:hint="@string/target_uid"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 app:endIconMode="clear_text">
 
@@ -59,16 +63,15 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-
         <com.google.android.material.button.MaterialButton android:id="@+id/btn_start"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="CALL"
-                app:layout_constraintTop_toBottomOf="@id/til_target"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:enabled="false"/>
+                                                           android:layout_width="match_parent"
+                                                           android:layout_height="wrap_content"
+                                                           android:text="@string/call"
+                                                           app:layout_constraintTop_toBottomOf="@id/til_target"
+                                                           app:layout_constraintStart_toStartOf="parent"
+                                                           app:layout_constraintEnd_toEndOf="parent"
+                                                           style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                                           android:enabled="false"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
