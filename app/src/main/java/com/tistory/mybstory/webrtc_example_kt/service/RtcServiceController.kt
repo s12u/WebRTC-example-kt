@@ -40,8 +40,6 @@ class RtcServiceController {
 
     private var rtcService: RtcService? = null
 
-    //TODO: need to make callHandler for caller/callee
-
     fun attachService(service: RtcService) {
         Timber.e("Service attached!")
         callHandler.create()
@@ -103,10 +101,6 @@ class RtcServiceController {
      * for caller
      *
      **/
-
-    //TODO: need to delete offer/answer/ice candidates/ at connection closed
-
-    //TODO: need to implement clear offer on disconnect (caller) & detect "disconnected" event
     fun offerDevice(remoteUid: String) {
         Timber.e("Listening for ICE Candidates...(Caller)")
         listenForIceCandidates(remoteUid)
@@ -177,7 +171,7 @@ class RtcServiceController {
                 callHandler.onActionPerformed(CallAction.READY) // called once at first
             }
             .combineLatest(callHandler.callback.toFlowable(BackpressureStrategy.LATEST)
-                .doOnNext{
+                .doOnNext {
                     handleCallEvent(null, it)
                 }
                 .filter { it.action == CallAction.READY }
@@ -187,7 +181,7 @@ class RtcServiceController {
                     Timber.e("Answer received !! ")
                     handleCallEvent(it.first, it.second)
                 }, {
-                   // error
+                    // error
                     it.printStackTrace()
                 }
 
@@ -248,8 +242,6 @@ class RtcServiceController {
      *
      **/
 
-
-    // TODO: action에 따라서 분기 시켜야 함
     fun listenForOffer(currentUid: String) {
         Timber.e("Wating for offer...")
         disposables += offersRepository
@@ -262,10 +254,9 @@ class RtcServiceController {
                 Timber.e("Offer cancelled....")
                 resetRtcClient()
             }
-            .combineLatest( // TODO: need to implement on caller-logic
+            .combineLatest(
                 callHandler.callback.toFlowable(BackpressureStrategy.LATEST)
             ).subscribe({
-                //TODO: need to refactoring
                 Timber.e("Listening for ICE Candidates..(Callee)")
                 handleCallEvent(it.first, it.second)
             }, {
@@ -284,6 +275,8 @@ class RtcServiceController {
 
             override fun onSetFailure(p0: String?) {
                 super.onSetFailure(p0)
+                Timber.e("Failed to set Remote session description for answer")
+                // error
             }
         }, remoteDescription)
 
@@ -341,7 +334,6 @@ class RtcServiceController {
         override fun onIceConnectionChanged(iceConnectionState: PeerConnection.IceConnectionState) {
             Timber.e("ICE Connection state changed : %s", iceConnectionState.name)
             callHandler.onConnectionStateChanged(iceConnectionState)
-            handleStateChanges(iceConnectionState)
         }
     }
 
@@ -353,22 +345,6 @@ class RtcServiceController {
             CallEvent.Type.ACTION -> {
                 Timber.e("Action ${callEvent.action} performed!")
                 handleCallAction(sdp, callEvent.action!!)
-            }
-        }
-    }
-
-    fun handleStateChanges(
-        iceConnectionState: PeerConnection.IceConnectionState
-    ) {
-        when (iceConnectionState) {
-            PeerConnection.IceConnectionState.CLOSED,
-            PeerConnection.IceConnectionState.DISCONNECTED,
-            PeerConnection.IceConnectionState.FAILED -> {
-                //resetRtcClient()
-            }
-
-            else -> {
-
             }
         }
     }

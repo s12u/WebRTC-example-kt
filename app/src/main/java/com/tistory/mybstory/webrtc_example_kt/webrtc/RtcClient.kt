@@ -92,8 +92,6 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         peerConnection?.addStream(localMediaStream)
     }
 
-    // TODO : need to run on new thread
-
     fun createOffer(sdpObserver: SimpleSdpObserver) {
         CoroutineScope(Dispatchers.IO).launch {
             peerConnection?.createOffer(sdpObserver, mediaConstraints)
@@ -168,7 +166,6 @@ class RtcClient constructor(context: Context) : RemoteVideoHandler {
         }
     }
 
-    // TODO: error on switching camera
     fun switchCamera(cameraSwitchHandler: CameraVideoCapturer.CameraSwitchHandler? = null) =
         videoCapturer?.switchCamera(cameraSwitchHandler)
 
