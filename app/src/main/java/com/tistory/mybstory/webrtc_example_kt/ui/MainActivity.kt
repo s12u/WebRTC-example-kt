@@ -1,6 +1,7 @@
 package com.tistory.mybstory.webrtc_example_kt.ui
 
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -15,6 +16,7 @@ import com.tistory.mybstory.webrtc_example_kt.databinding.ActivityMainBinding
 import com.tistory.mybstory.webrtc_example_kt.service.RtcService
 import com.tistory.mybstory.webrtc_example_kt.ui.viewmodel.MainViewModel
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.await
+import com.tistory.mybstory.webrtc_example_kt.util.extensions.hideKeyboard
 import com.tistory.mybstory.webrtc_example_kt.util.extensions.launchActivity
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
@@ -23,7 +25,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 
 class MainActivity : BaseActivity() {
 
@@ -36,6 +37,7 @@ class MainActivity : BaseActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
     private val disposables = CompositeDisposable()
+    private val sendIntent = Intent()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,10 +50,11 @@ class MainActivity : BaseActivity() {
         signIn()
     }
 
-    private fun observeUser() = viewModel.observeUser().observe(this, Observer {
-        binding.tvUid.text = it.uid
-
-    })
+    private fun observeUser() =
+        viewModel.observeUser().observe(this, Observer {
+            binding.tvUid.text = it.uid
+            sendIntent.putExtra(Intent.EXTRA_TEXT, it.uid)
+        })
 
     private fun initUI() {
         binding.btnStart.setOnClickListener {
@@ -63,13 +66,24 @@ class MainActivity : BaseActivity() {
             launchActivity<CallActivity>(bundle)
         }
 
+        binding.ivShare.setOnClickListener {
+            sendIntent.apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+            }
+            startActivity(Intent.createChooser(sendIntent, resources.getText(R.string.share_to)))
+        }
+
+        binding.containerMain.setOnClickListener {
+            it.hideKeyboard()
+        }
+
         disposables += et_target.textChangeEvents().skipInitialValue()
             .subscribe {
                 if (it.count == 0) {
                     til_target.error = "Enter remote id!"
                     btn_start.isEnabled = false
-                }
-                else {
+                } else {
                     til_target.error = ""
                     btn_start.isEnabled = true
                 }

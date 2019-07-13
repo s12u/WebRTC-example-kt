@@ -8,6 +8,7 @@
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/container_main"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="18dp"
@@ -20,7 +21,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                android:text="My UID:"/>
+                android:text="My Firebase UID:"/>
 
         <TextView android:id="@+id/tv_uid"
                   android:layout_width="wrap_content"
@@ -30,6 +31,13 @@
                   app:layout_constraintBaseline_toBaselineOf="@id/label_uid"
                   android:layout_marginBottom="100dp"/>
 
+        <ImageView android:id="@+id/iv_share"
+                   android:layout_width="wrap_content" android:layout_height="wrap_content"
+                   android:layout_marginStart="8dp"
+                   app:layout_constraintStart_toEndOf="@id/tv_uid"
+                   app:layout_constraintBottom_toBottomOf="@id/label_uid"
+                   android:src="@drawable/ic_baseline_share_24px" tools:layout_editor_absoluteY="318dp"/>
+
         <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_target"
                 android:layout_width="match_parent"
@@ -37,24 +45,29 @@
                 app:layout_constraintTop_toBottomOf="@id/tv_uid"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:errorEnabled="true">
+                android:layout_marginTop="64dp"
+                app:errorEnabled="true"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:endIconMode="clear_text">
 
             <EditText android:id="@+id/et_target"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
+                      android:paddingBottom="10dp"
                       android:maxLines="1"
                       android:inputType="text"/>
 
         </com.google.android.material.textfield.TextInputLayout>
 
 
-        <Button android:id="@+id/btn_start"
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="CALL"
                 app:layout_constraintTop_toBottomOf="@id/til_target"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:enabled="false"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

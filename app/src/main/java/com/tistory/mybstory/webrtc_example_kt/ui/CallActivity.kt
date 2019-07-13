@@ -139,7 +139,6 @@ class CallActivity : Activity() {
         binding.buttonSwitchCamera.setOnClickListener {
             switchCamera()
         }
-
     }
 
     private fun acceptCall() {
@@ -190,5 +189,4 @@ class CallActivity : Activity() {
             }
         }
     }
-
 }

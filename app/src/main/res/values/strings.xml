@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WebRTC-example-kt</string>
+    <string name="share_to">Share to</string>
 </resources>
